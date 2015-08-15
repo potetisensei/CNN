@@ -2,22 +2,25 @@
 #define _POOL_LAYER_H_
 
 #include <vector>
+#include <algorithm>
+#include <limits>
 #include "layer.h"
 #include "util.h"
 using namespace std;
 
 class PoolLayer : public Layer {
+ public:
     PoolLayer(int breadth_neuron, int num_channels, int stride, int breadth_filter);
     virtual ~PoolLayer() {}
-    virtual void ConnectLayer(Layer *layer) { assert(0); }
+    virtual void ConnectLayer(Layer *layer);
     virtual void CalculateOutput(Layer *layer);
-    virtual void Propagate(Layer *layer) { assert(0); }
+    virtual void Propagate(Layer *layer);
     virtual void BackPropagate(DoubleVector2d next_deltas) { assert(0); }
     virtual void UpdateWeight(DoubleVector2d deltas) { assert(0); }
     virtual void UpdateBias(DoubleVector2d deltas) { assert(0); }
 
     bool calculated_;
-    vector<struct Neuron> neurons_; // think as 1d even if Layer has 2d or 3d neurons
+
     DoubleVector2d deltas_; // [sample_idx][neuron_idx] 
 private:
     int breadth_neuron_;
@@ -25,6 +28,8 @@ private:
     int stride_;
     int breadth_filter_;
     int breadth_output_;
+
+    vector<int> maxid;
 };
 
 #endif

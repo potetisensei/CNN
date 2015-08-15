@@ -75,6 +75,7 @@ void ConvLayer::Propagate(Layer *layer) {
                         for (int q=0; q<breadth_filter_; q++) {
                             int x = j*stride_ + q;
                             int y = i*stride_ + p;
+			    
                             int neuron_idx2 = k*size2 + y*breadth_neuron_ + x;
                             double z = 0.0;
 

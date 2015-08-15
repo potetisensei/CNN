@@ -19,7 +19,7 @@ void NeuralNet::AppendLayer(Layer *layer) {
 }
 
 void NeuralNet::ConnectLayers() {
-    assert(!connected_);   
+    assert(!connected_);
     for (int i=0; i<layers_.size()-1; i++) {
         layers_[i]->ConnectLayer(layers_[i+1]);
     }

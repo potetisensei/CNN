@@ -2,11 +2,13 @@
 #include <cstdlib>
 #include <cassert>
 #include <vector>
+#include <ctime>
 #include "util.h"
 #include "neural_net.h"
 #include "fully_connected_layer.h"
 #include "conv_layer.h"
 #include "activation_function.h"
+#include "pool_layer.h"
 #include "bmp.h"
 using namespace std;
 
@@ -67,8 +69,57 @@ void TestConvLayer() {
     Softmax softmax;
     vector<double> input;
     vector<double> output;
+    ConvLayer *cl = new ConvLayer(128, 3, 1, 9, 1, &sigmoid, 0.0005);
+
     srand(time(NULL));
-    net.AppendLayer(new ConvLayer(128, 3, 1, 9, 1, &sigmoid, 0.0005));
+    net.AppendLayer(cl);
+    net.AppendLayer(new FullyConnectedLayer(128*128, &sigmoid, 0.0005));
+    net.ConnectLayers();
+        
+    bmp.loadData("lena.bmp");
+    assert(bmp.height() == 128);
+    assert(bmp.width() == 128);
+    input.resize(128*128*3);
+    for (int i=0; i<128; i++) {
+        for (int j=0; j<128; j++) {
+            input[i*128 + j] = bmp.getColor(j, i).r/256.0; 
+            input[128*128 + i*128 + j] = bmp.getColor(j, i).g/256.0; 
+            input[2*128*128 + i*128 + j] = bmp.getColor(j, i).b/256.0; 
+        }
+    }
+    output.resize(128*128);
+    net.PropagateLayers(input, output);
+    double maxval = -1.0;
+    for (int i=0; i<128; i++) {
+        for (int j=0; j<128; j++) {
+            maxval = max(maxval, output[i*128+j]);
+        }
+    }
+
+    for (int i=0; i<128; i++) {
+        for (int j=0; j<128; j++) {
+            printf("%f ", output[i*128+j]);
+            int val = (int)(output[i*128 + j]*256/maxval);
+            bmp.setColor(j, i, val, val, val);
+        }puts("");
+    }
+    bmp.writeData("output.bmp");
+}
+
+void TestPoolLayer() {
+    BitMapProcessor bmp;
+    NeuralNet net;
+    RectifiedLinear rel;
+    LogisticSigmoid sigmoid;
+    Softmax softmax;
+    vector<double> input;
+    vector<double> output;
+    ConvLayer *cl = new ConvLayer(128, 3, 1, 9, 1, &sigmoid, 0.0005);
+    PoolLayer *pl = new PoolLayer(128, 1, 1, 3);
+    
+    srand(time(NULL));
+    net.AppendLayer(cl);
+    net.AppendLayer(pl);
     net.AppendLayer(new FullyConnectedLayer(128*128, &sigmoid, 0.0005));
     net.ConnectLayers();
         
@@ -103,7 +154,8 @@ void TestConvLayer() {
 }
 
 
+
 int main() {
-    //TestFullyConnectedLayer();
-    TestConvLayer();
+  //TestFullyConnectedLayer();
+  TestPoolLayer();
 }
