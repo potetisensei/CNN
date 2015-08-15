@@ -94,37 +94,35 @@ void ConvLayer::Propagate(Layer *layer) {
 
     layer->calculated_ = false;
 }
-
+ 
 void BackPropagate( DoubleVector2d next_deltas ){
-    for (int m=0; m<num_filters_; m++) { 
-        for (int i=0; i<breadth_output_; i++) {
-            for (int j=0; j<breadth_output_; j++) {
-                int neuron_idx1 = m*size + i*breadth_output_ + j;
-                double sum_conv = 0.0;
+  deltas_resize( next_deltas.size() );
+  for( int l = 0; l < deltas_.size(); l++ ){
+    for( int m = 0; m < num_filters_; m++ ){ 
+      for( int i = 0; i < breadth_output_; i++ ){
+	for( int j = 0; j < breadth_output_; j++ ){
+	  int neuron_idx1 = m*size + i*breadth_output_ + j;
+	  double sum_conv = 0.0;
 
-                assert(i*stride_ < breadth_neuron_);
-                assert(j*stride_ < breadth_neuron_);
+	  assert( i*stride_ < breadth_neuron_ );
+	  assert( j*stride_ < breadth_neuron_ );
 
-                for (int k=0; k<num_channels_; k++) {
-                    for (int p=0; p<breadth_filter_; p++) {
-                        for (int q=0; q<breadth_filter_; q++) {
-                            int x = j*stride_ + q;
-                            int y = i*stride_ + p;
-			    
-                            int neuron_idx2 = k*size2 + y*breadth_neuron_ + x;
-                            double z = 0.0;
+	  for( int k = 0; k < num_channels_; k++ ){
+	    for( int p = 0; p < breadth_filter_; p++ ){
+	      for( int q = 0; q < breadth_filter_; q++ ){
+		int x = j*stride_ + q;
+		int y = i*stride_ + p;
+	      
+		int neuron_idx2 = k*size2 + y*breadth_neuron_ + x;
 
-                            if (x < breadth_neuron_ && y < breadth_neuron_) {
-                                z = neurons_[neuron_idx2].z;
-                            }
-                            sum_conv += z * edges_weight_[m][k][p][q];
-                        }
-                    }
-                }
-
-                output_neurons[neuron_idx1].u = sum_conv + biases_[m];
-            }
-        }
+		if (x < breadth_neuron_ && y < breadth_neuron_) {
+		  delta[l][neuron_idx2] += next_delta[l][neuron_idx1] * edges_weight_[m][k][p][q] * f_->CalculateDerivative(neurons_[neuron_idx2].u);
+		}
+	      }
+	    }
+	  }
+	}
+      }
     }
-  
+  }
 }
