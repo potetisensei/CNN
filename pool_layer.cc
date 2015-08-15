@@ -47,7 +47,7 @@ void PoolLayer::Propagate(Layer *layer){
 	      z = neurons_[k*size2 + y*breadth_neuron_ + x].z;
 	    if( maxv < z ){
 	      maxv = z;
-	      maxid = k*size2 + y*breadth_neuron_ + x;
+	      maxid[k*size + i*breadth_output_ + j] = k*size2 + y*breadth_neuron_ + x;
 	    }
 	  }
 	}
@@ -61,8 +61,9 @@ void PoolLayer::Propagate(Layer *layer){
 }
 
 
-/*void PoolLayer::BackPropagate( DoubleVector2d next_deltas ){
-  deltas_.resize( next_deltas.size() );
+void PoolLayer::BackPropagate( DoubleVector2d next_deltas ){
+  deltas_.resize( next_deltas. );
 
-  for( int i = 0; i < e
-}*/
+  for( int i = 0; i < next_deltas.size(); i++ )
+    deltas_[ maxid[i] ] = next_deltas[i];
+}
