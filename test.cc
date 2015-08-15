@@ -174,14 +174,21 @@ void TestDeepLearning(){
   RectifiedLinear rel;
   LogisticSigmoid sigmoid;
   Softmax softmax;
+  ConvLayer *conv1 = new ConvLayer(128, 3, 1, 5, 8, &sigmoid, 0.0005);
+  PoolLayer *pool1 = new PoolLayer(128, 8, 2, 3);
+  ConvLayer *conv2 = new ConvLayer(64, 8, 1, 5, 16, &sigmoid, 0.0005);
+  PoolLayer *pool2 = new PoolLayer(64, 16, 2, 3);
+  FullyConnectedLayer *full1 = new FullyConnectedLayer(32*32*16, &softmax, 0.0005);
+  FullyConnectedLayer *full2 = new FullyConnectedLayer(2, &sigmoid, 0.0005);
+  
 
   srand(time(NULL));
-  net.AppendLayer(new ConvLayer(128, 3, 1, 5, 8, &sigmoid, 0.000005));
-  net.AppendLayer(new PoolLayer(128, 8, 2, 3));
-  net.AppendLayer(new ConvLayer(64, 8, 1, 5, 16, &sigmoid, 0.000005));
-  net.AppendLayer(new PoolLayer(64, 16, 2, 3));
-  net.AppendLayer(new FullyConnectedLayer(32*32*16, &softmax, 0.000005));
-  net.AppendLayer(new FullyConnectedLayer(2, &sigmoid, 0.000005));  
+  net.AppendLayer(conv1);
+  net.AppendLayer(pool1);
+  net.AppendLayer(conv2);
+  net.AppendLayer(pool2);
+  net.AppendLayer(full1);
+  net.AppendLayer(full2);  
   net.ConnectLayers();
 
   vector<double> testin;
@@ -223,6 +230,13 @@ void TestDeepLearning(){
 
     cout << filename << endl;
     cout << "o: " << out2[0] << " " << out2[1] << endl;
+    if (out2[0] > 0.3) {
+        conv1->learning_rate_ = 0.000005;
+        conv1->learning_rate_ = 0.000005;
+        full1->learning_rate_ = 0.000005;
+        full2->learning_rate_ = 0.000005;
+    }
+        
     cout << endl;
   }
 
