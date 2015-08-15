@@ -52,6 +52,7 @@ void ConvLayer::ConnectLayer(Layer *layer) {
 void ConvLayer::Propagate(Layer *layer) {
     vector<struct Neuron> &output_neurons = layer->neurons_;
     int size = breadth_output_ * breadth_output_;
+    int size2 = breadth_neuron_ * breadth_neuron_;
 
     assert(calculated_);
 
@@ -74,7 +75,7 @@ void ConvLayer::Propagate(Layer *layer) {
                         for (int q=0; q<breadth_filter_; q++) {
                             int x = j*stride_ + q;
                             int y = i*stride_ + p;
-                            int neuron_idx2 = k*size + y*breadth_output_ + x;
+                            int neuron_idx2 = k*size2 + y*breadth_neuron_ + x;
                             double z = 0.0;
 
                             if (x < breadth_neuron_ && y < breadth_neuron_) {

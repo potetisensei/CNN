@@ -67,10 +67,8 @@ void TestConvLayer() {
     Softmax softmax;
     vector<double> input;
     vector<double> output;
-    ConvLayer *cl = new ConvLayer(128, 3, 1, 9, 1, &sigmoid, 0.0005);
-
     srand(time(NULL));
-    net.AppendLayer(cl);
+    net.AppendLayer(new ConvLayer(128, 3, 1, 9, 1, &sigmoid, 0.0005));
     net.AppendLayer(new FullyConnectedLayer(128*128, &sigmoid, 0.0005));
     net.ConnectLayers();
         
