@@ -153,9 +153,66 @@ void TestPoolLayer() {
     bmp.writeData("output.bmp");
 }
 
+void TestConvBackPropagate() {
+    BitMapProcessor bmp;
+    NeuralNet net;
+    RectifiedLinear rel;
+    LogisticSigmoid sigmoid;
+    Softmax softmax;
+    vector<double> input;
+    vector<double> output;
+    ConvLayer *cl = new ConvLayer(128, 3, 1, 9, 1, &sigmoid, 0.0005);
+    PoolLayer *pl = new PoolLayer(128, 1, 1, 3);
+    
+    srand(time(NULL));
+    net.AppendLayer(cl);
+    net.AppendLayer(pl);
+    net.AppendLayer(new FullyConnectedLayer(128*128, &sigmoid, 0.0005));
+    net.AppendLayer(new FullyConnectedLayer(2, &sigmoid, 0.0005));
+    net.ConnectLayers();
+        
+    bmp.loadData("lena.bmp");
+    assert(bmp.height() == 128);
+    assert(bmp.width() == 128);
+    input.resize(128*128*3);
+    for (int i=0; i<128; i++) {
+        for (int j=0; j<128; j++) {
+            input[i*128 + j] = bmp.getColor(j, i).r/256.0; 
+            input[128*128 + i*128 + j] = bmp.getColor(j, i).g/256.0; 
+            input[2*128*128 + i*128 + j] = bmp.getColor(j, i).b/256.0; 
+        }
+    }
+    output.resize(2);
+    output[0] = 1.0;
+    output[1] = 0.0;
 
+    DoubleVector2d inputs;
+    DoubleVector2d outputs;
+
+    inputs.push_back(input);
+    outputs.push_back(output);
+    for (int j=0; j<10000; j++) {
+        vector<double> output2;
+
+        net.TrainNetwork(inputs, outputs);
+        printf("%d: \n", j);
+        printf("expect: ");
+        for (int k=0; k<2; k++) {
+            printf("%f ", output[k]);
+        }
+        puts("");
+        output2.resize(2);
+        net.PropagateLayers(input, output2);
+        printf("output: ");
+        for (int k=0; k<2; k++) {
+            printf("%f ", output2[k]);
+        }
+        puts("");
+    }
+}
 
 int main() {
   //TestFullyConnectedLayer();
-  TestPoolLayer();
+  //TestPoolLayer();
+  TestConvBackPropagate();
 }

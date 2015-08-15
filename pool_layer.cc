@@ -8,6 +8,7 @@ PoolLayer::PoolLayer(int breadth_neuron, int num_channels, int stride, int bread
       num_channels_(num_channels){
     breadth_output_ = (breadth_neuron-1)/stride + 1;
     neurons_.resize( breadth_neuron * breadth_neuron * num_channels );
+    maxid.resize(breadth_output_ * breadth_output_ * num_channels_);
 }
 
 void PoolLayer::CalculateOutput(Layer *layer) {

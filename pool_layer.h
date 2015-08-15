@@ -16,10 +16,8 @@ class PoolLayer : public Layer {
     virtual void CalculateOutput(Layer *layer);
     virtual void Propagate(Layer *layer);
     virtual void BackPropagate(DoubleVector2d next_deltas);
-    virtual void UpdateWeight(DoubleVector2d deltas) { assert(0); }
-    virtual void UpdateBias(DoubleVector2d deltas) { assert(0); }
-
-    bool calculated_;
+    virtual void UpdateWeight(DoubleVector2d deltas) {}
+    virtual void UpdateBias(DoubleVector2d deltas) {}
 
     DoubleVector2d deltas_; // [sample_idx][neuron_idx] 
 private:

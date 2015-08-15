@@ -80,12 +80,14 @@ void NeuralNet::BackPropagateLayers(DoubleVector2d &dataset, DoubleVector2d &out
 
 void NeuralNet::TrainNetwork(DoubleVector2d &inputs, DoubleVector2d &expected_outputs) {
     DoubleVector2d actual_outputs;
+    int last_idx = layers_.size()-1;
+    assert(last_idx >= 1);
+    vector<struct Neuron> &last_neurons = layers_[last_idx]->neurons_;
 
     assert(inputs.size() == expected_outputs.size());
     actual_outputs.resize(inputs.size());
     for (int i=0; i<inputs.size(); i++) {
-        assert(inputs[i].size() == expected_outputs[i].size());
-        actual_outputs[i].resize(inputs[i].size());
+        actual_outputs[i].resize(last_neurons.size());
         PropagateLayers(inputs[i], actual_outputs[i]);
     }
 
