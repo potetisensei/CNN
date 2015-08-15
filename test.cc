@@ -175,6 +175,7 @@ void TestDeepLearning(){
   LogisticSigmoid sigmoid;
   Softmax softmax;
 
+  srand(time(NULL));
   net.AppendLayer(new ConvLayer(128, 3, 1, 5, 8, &sigmoid, 0.00005));
   net.AppendLayer(new PoolLayer(128, 8, 2, 3));
   net.AppendLayer(new ConvLayer(64, 8, 1, 5, 16, &sigmoid, 0.00005));
