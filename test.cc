@@ -160,23 +160,71 @@ void TestPoolLayer() {
 void TestDeepLearning(){
 
   mt19937 mt( time( NULL ) );
-  int t = 0;
   int MAX_FILE = 12500;
   char filename[256];
-  
-  if( mt() % 2 == 0 ){
-    t = 0;
-    sprintf( filename , "processed/cat.%d.jpg" , mt()%MAX_FILE );
-  } else {
-    t = 1;
-    sprintf( filename , "processed/dog.%d.jpg" , mt()%MAX_FILE );
-  }
-  
+  int LOOP_N = 1000;
+  int namonakiacc = 0;
+  vector<double> in, out;
+  DoubleVector2d ins, outs;
+
   unsigned char* pixels;
   int width, height, bpp;
-
-  pixels = stbi_load( filename , &width , &height , &bpp , 0 );
   
+  NeuralNet net;
+  RectifiedLinear rel;
+  LogisticSigmoid sigmoid;
+  Softmax softmax;
+
+  net.AppendLayer(new ConvLayer(128, 3, 1, 5, 8, &sigmoid, 0.00005));
+  net.AppendLayer(new PoolLayer(128, 8, 2, 3));
+  net.AppendLayer(new ConvLayer(64, 8, 1, 5, 16, &sigmoid, 0.00005));
+  net.AppendLayer(new PoolLayer(64, 16, 2, 3));
+  net.AppendLayer(new FullyConnectedLayer(32*32*16, &softmax, 0.00005));
+  net.AppendLayer(new FullyConnectedLayer(2, &sigmoid, 0.00005));  
+  net.ConnectLayers();
+
+  vector<double> testin;
+  pixels = stbi_load( "processed/dog.1.jpg" , &width , &height , &bpp , 0 );
+  for( int k = 0; k < 3; k++ )
+    for( int i = 0; i < height; i++ )
+      for( int j = 0; j < width; j++ )
+	testin.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
+  
+  
+  for( int loop = 0; loop < LOOP_N; loop++ ){
+    in.clear();
+    out.clear();
+  
+    if( mt() % 2 == 0 ){
+      out.push_back( 1.0 ); out.push_back( 0.0 );
+      sprintf( filename , "processed/cat.%d.jpg" , mt()%MAX_FILE );
+    } else {
+      out.push_back( 0.0 ); out.push_back( 1.0 );
+      sprintf( filename , "processed/dog.%d.jpg" , mt()%MAX_FILE );
+    }
+  
+    pixels = stbi_load( filename , &width , &height , &bpp , 0 );
+
+    for( int k = 0; k < 3; k++ )
+      for( int i = 0; i < height; i++ )
+	for( int j = 0; j < width; j++ )
+	  in.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
+
+    ins.clear();
+    ins.push_back( in );
+    outs.clear();
+    outs.push_back( out );
+
+    net.TrainNetwork(ins, outs);
+    vector<double> out2(2);
+
+    net.PropagateLayers( testin , out2 );
+
+    cout << filename << endl;
+    cout << "o: " << out2[0] << " " << out2[1] << endl;
+    cout << endl;
+  }
+
 }
 
 int main() {
