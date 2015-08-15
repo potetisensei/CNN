@@ -160,7 +160,7 @@ void TestPoolLayer() {
 void TestDeepLearning(){
 
   mt19937 mt( time( NULL ) );
-  int MAX_FILE = 12500;
+  int MAX_FILE = 12499;
   char filename[256];
   int LOOP_N = 1000;
   int namonakiacc = 0;
@@ -185,7 +185,7 @@ void TestDeepLearning(){
   net.ConnectLayers();
 
   vector<double> testin;
-  pixels = stbi_load( "processed/dog.1.jpg" , &width , &height , &bpp , 0 );
+  pixels = stbi_load( "processed/dog.12499.jpg" , &width , &height , &bpp , 0 );
   for( int k = 0; k < 3; k++ )
     for( int i = 0; i < height; i++ )
       for( int j = 0; j < width; j++ )
