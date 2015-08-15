@@ -95,9 +95,13 @@ void ConvLayer::Propagate(Layer *layer) {
     layer->calculated_ = false;
 }
  
-void BackPropagate( DoubleVector2d next_deltas ){
-  deltas_resize( next_deltas.size() );
+void ConvLayer::BackPropagate( DoubleVector2d next_deltas ){
+  int size = breadth_output_ * breadth_output_;
+  int size2 = breadth_neuron_ * breadth_neuron_;
+  
+  deltas_.resize( next_deltas.size() );
   for( int l = 0; l < deltas_.size(); l++ ){
+    deltas_[l].resize( size2 );
     for( int m = 0; m < num_filters_; m++ ){ 
       for( int i = 0; i < breadth_output_; i++ ){
 	for( int j = 0; j < breadth_output_; j++ ){
@@ -116,7 +120,7 @@ void BackPropagate( DoubleVector2d next_deltas ){
 		int neuron_idx2 = k*size2 + y*breadth_neuron_ + x;
 
 		if (x < breadth_neuron_ && y < breadth_neuron_) {
-		  delta[l][neuron_idx2] += next_delta[l][neuron_idx1] * edges_weight_[m][k][p][q] * f_->CalculateDerivative(neurons_[neuron_idx2].u);
+		  deltas_[l][neuron_idx2] += next_deltas[l][neuron_idx1] * edges_weight_[m][k][p][q] * f_->CalculateDerivative(neurons_[neuron_idx2].u);
 		}
 	      }
 	    }
