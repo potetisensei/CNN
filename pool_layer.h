@@ -15,7 +15,7 @@ class PoolLayer : public Layer {
     virtual void ConnectLayer(Layer *layer);
     virtual void CalculateOutput(Layer *layer);
     virtual void Propagate(Layer *layer);
-    virtual void BackPropagate(DoubleVector2d next_deltas) { assert(0); }
+    virtual void BackPropagate(DoubleVector2d next_deltas);
     virtual void UpdateWeight(DoubleVector2d deltas) { assert(0); }
     virtual void UpdateBias(DoubleVector2d deltas) { assert(0); }
 

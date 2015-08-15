@@ -62,7 +62,7 @@ void PoolLayer::Propagate(Layer *layer){
 
 
 void PoolLayer::BackPropagate( DoubleVector2d next_deltas ){
-  deltas_.resize( next_deltas. );
+  deltas_.resize( neurons_.size() );
 
   for( int i = 0; i < next_deltas.size(); i++ )
     deltas_[ maxid[i] ] = next_deltas[i];
