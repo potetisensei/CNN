@@ -130,3 +130,25 @@ void ConvLayer::BackPropagate( DoubleVector2d next_deltas ){
     }
   }
 }
+
+void ConvLayer::UpdateWeight(DoubleVector2d deltas) {
+  int size2 = breadth_neuron_ * breadth_neuron_;
+  for( int l = 0; l < deltas.size(); l++ ){
+    for( int m = 0; m < num_filters_; m++ ){
+      for( int i = 0; i < breadth_output_; i++ ){
+	for( int j = 0; j < breadth_output_; j++ ){
+	  for( int k = 0; k < num_channels_; k++ ){
+	    for( int p = 0; p < breadth_filter_; p++ ){
+	      for( int q = 0; q < breadth_filter_; q++ ){
+		int x = j*stride_ + q;
+		int y = i*stride_ + p;
+		int neuron_idx2 = k*size2 + y*breadth_neuron_ + x;
+		edges_weight_[m][k][p][q] -= learning_rate_ * deltas_[l][neuron_idx2] * neurons_[neuron_idx2].z / (breadth_output_*breadth_output_) / deltas.size();
+	      }
+	    }
+	  }
+	}
+      }
+    }
+  }
+}
