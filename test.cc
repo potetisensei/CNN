@@ -161,14 +161,14 @@ void TestConvBackPropagate() {
     Softmax softmax;
     vector<double> input;
     vector<double> output;
-    ConvLayer *cl = new ConvLayer(128, 3, 1, 9, 1, &sigmoid, 0.0005);
+    ConvLayer *cl = new ConvLayer(128, 3, 1, 9, 1, &sigmoid, 0.00005);
     PoolLayer *pl = new PoolLayer(128, 1, 1, 3);
     
     srand(time(NULL));
     net.AppendLayer(cl);
     net.AppendLayer(pl);
-    net.AppendLayer(new FullyConnectedLayer(128*128, &sigmoid, 0.0005));
-    net.AppendLayer(new FullyConnectedLayer(2, &sigmoid, 0.0005));
+    net.AppendLayer(new FullyConnectedLayer(128*128, &softmax, 0.00005));
+    net.AppendLayer(new FullyConnectedLayer(2, &sigmoid, 0.00005));
     net.ConnectLayers();
         
     bmp.loadData("lena.bmp");
@@ -214,5 +214,5 @@ void TestConvBackPropagate() {
 int main() {
   //TestFullyConnectedLayer();
   //TestPoolLayer();
-  TestConvBackPropagate();
+  //TestConvBackPropagate();
 }
