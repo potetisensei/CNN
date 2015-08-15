@@ -5,35 +5,20 @@
 #include <cassert>
 #include <vector>
 #include <limits>
+#include "bmp.h"
+#include "layer.h"
+#include "fully_connected_layer.h"
 
 using namespace std;
 
 typedef vector<vector<double> > DoubleVector2d;
 typedef vector<DoubleVector2d> DoubleVector3d;
+typedef vector<DoubleVector3d> DoubleVector4d;
 
 double GenRandom(double fmin, double fmax) {
     double f = (double)rand() / RAND_MAX;
     return fmin + f * (fmax - fmin);
 }
-
-class Weight {
-public:
-    Weight () {}
-    double GetWeight() const { return *weight_instance_; }   
-    void SetWeight(double weight) const { *weight_instance_ = weight; }
-    void AddWeight(double weight) const { *weight_instance_ += weight; }
-    void SubWeight(double weight) const { *weight_instance_ -= weight; }
-    double *GetWeightInstance() { return weight_instance_; }
-    void SetWeightInstance(double *ref) { weight_instance_ = ref; }
-
-private:
-    double *weight_instance_;
-};
-
-struct Edge {
-    int to;
-    Weight w;
-};
 
 struct Neuron {
     double u;
@@ -171,50 +156,197 @@ public:
 class Layer {
 public:
     Layer() : calculated_(false) {}
-    Layer(double rate) : calculated_(false), learning_rate_(rate) {}
+    Layer(double rate, ActivationFunction *f) 
+        : calculated_(false), learning_rate_(rate), f_(f) {}
     virtual ~Layer() {}
 
     virtual void ConnectLayer(Layer *layer) { assert(0); }
-    virtual void CalculateOutput() { assert(0); }
-    virtual void Propagate(Layer *output) { assert(0); }
+
+    virtual void CalculateOutput(Layer *layer) {
+        vector<struct Neuron> &neurons = layer->neurons_;
+
+        assert(!layer->calculated_);
+        for (int i=0; i<neurons.size(); i++) {
+            neurons[i].z = f_->Calculate(neurons[i].u, neurons);
+        }
+        layer->calculated_ = true;
+    }
+
+    virtual void Propagate(Layer *layer) { assert(0); }
     virtual void BackPropagate(DoubleVector2d next_deltas) { assert(0); }
     virtual void UpdateWeight(DoubleVector2d deltas) { assert(0); }
     virtual void UpdateBias(DoubleVector2d deltas) { assert(0); }
 
     bool calculated_;
-    vector<struct Neuron> neurons_; // think as linear even 2d, 3d
-    vector<vector<struct Edge> > edges_; // think as linear 
+    vector<struct Neuron> neurons_; // think as 1d even if Layer has 2d or 3d neurons
     DoubleVector2d deltas_; // [sample_idx][neuron_idx] 
 protected:
+    ActivationFunction *f_;
     double learning_rate_;
 };
 
-/*class ConvLayer : public Layer {
+class ConvLayer : public Layer {
+public:
+    ConvLayer(int breadth_neuron, int num_channels, int stride, int breadth_filter, int num_filters, ActivationFunction *f, double learning_rate)
+            :  breadth_neuron_(breadth_neuron), 
+               num_channels_(num_channels), 
+               stride_(stride), 
+               breadth_filter_(breadth_filter),
+               num_filters_(num_filters),
+               Layer(learning_rate, f) {
+        assert(stride >= 1);
+        neurons_.resize(breadth_neuron * breadth_neuron * num_channels); // dangerous
+        edges_weight_.resize(num_filters);
+        breadth_output_ = (breadth_neuron-1)/stride + 1;
+    }
+
+    virtual ~ConvLayer() {}
+
+    virtual void ConnectLayer(Layer *layer) {
+        int expected_size = num_filters_ * breadth_output_ * breadth_output_; // dangerous
+
+        assert(layer->neurons_.size() == expected_size);
+
+        for (int i=0; i<num_filters_; i++) { // Bijm == Bm
+            biases_.push_back(GenRandom(-0.5, 0.5));
+        }
+
+        double lim = 1.0/sqrt(breadth_filter_*breadth_filter_*num_channels_);
+        assert(edges_weight_.size() == num_filters_);
+        for (int m=0; m<num_filters_; m++) {
+            edges_weight_[m].resize(num_channels_);
+            for (int k=0; k<num_channels_; k++) {
+                edges_weight_[m][k].resize(breadth_filter_);
+                for (int i=0; i<breadth_filter_; i++) {
+                    edges_weight_[m][k][i].resize(breadth_filter_);
+                    for (int j=0; j<breadth_filter_; j++) {
+                        edges_weight_[m][k][i][j] = GenRandom(-lim, lim);
+                    }
+                }
+            }
+        }
+    }
+
+ 
+    //    3d_neurons[z][y][x] z := m, k, z...
+    //                        y := i, p, y...
+    //                        x := j, q, x...
+    virtual void Propagate(Layer *layer) {
+        vector<struct Neuron> &output_neurons = layer->neurons_;
+        int size = breadth_output_ * breadth_output_;
+
+        assert(calculated_);
+
+        for (int i=0; i<output_neurons.size(); i++) {
+            output_neurons[i].u = 0.0;
+        }
+
+        assert(biases_.size() == num_filters_);
+        for (int m=0; m<num_filters_; m++) { 
+            for (int i=0; i<breadth_output_; i++) {
+                for (int j=0; j<breadth_output_; j++) {
+                    int neuron_idx1 = m*size + i*breadth_output_ + j;
+                    double sum_conv = 0.0;
+
+                    assert(i*stride_ < breadth_neuron_);
+                    assert(j*stride_ < breadth_neuron_);
+
+                    for (int k=0; k<num_channels_; k++) {
+                        for (int p=0; p<breadth_filter_; p++) {
+                            for (int q=0; q<breadth_filter_; q++) {
+                                int x = j*stride_ + q;
+                                int y = i*stride_ + p;
+                                int neuron_idx2 = k*size + y*breadth_output_ + x;
+                                double z = 0.0;
+
+                                if (x < breadth_neuron_ && y < breadth_neuron_) {
+                                    z = neurons_[neuron_idx2].z;
+                                }
+                                sum_conv += z * edges_weight_[m][k][p][q];
+                            }
+                        }
+                    }
+
+                    output_neurons[neuron_idx1].u = sum_conv + biases_[m];
+                }
+            }
+        }
+
+        layer->calculated_ = false;
+    }
+
+    virtual void BackPropagate(DoubleVector2d next_deltas) { assert(0); }
+    virtual void UpdateWeight(DoubleVector2d deltas) { assert(0); }
+    virtual void UpdateBias(DoubleVector2d deltas) { assert(0); }
+
+private:
+    int breadth_neuron_;
+    int num_channels_;
+    int stride_;
+    int breadth_filter_;
+    int num_filters_;
+    int breadth_output_;
+    vector<double> biases_;
+public:
+    DoubleVector4d edges_weight_; // [filter_idx][channel_idx][y][x] weight-sharing
 };
 
 class PoolLayer : public Layer {
+    PoolLayer(int breadth_neuron, int num_channels, int stride, int breadth_filter)
+        : breadth_neuron_(breadth_neuron), 
+          num_neurons_(num_neurons),
+          stride_(stride),
+          breadth_filter_(breadth_filter) {
+              
+    }
+
+    virtual ~PoolLayer() {}
+
+    virtual void ConnectLayer(Layer *layer) { assert(0); }
+
+    virtual void CalculateOutput(Layer *layer) {
+        vector<struct Neuron> &neurons = layer->neurons_;
+
+        assert(!layer->calculated_);
+        for (int i=0; i<neurons.size(); i++) {
+            neurons[i].z = f_->Calculate(neurons[i].u, neurons);
+        }
+        layer->calculated_ = true;
+    }
+
+    virtual void Propagate(Layer *layer) { assert(0); }
+    virtual void BackPropagate(DoubleVector2d next_deltas) { assert(0); }
+    virtual void UpdateWeight(DoubleVector2d deltas) { assert(0); }
+    virtual void UpdateBias(DoubleVector2d deltas) { assert(0); }
+
+    bool calculated_;
+    vector<struct Neuron> neurons_; // think as 1d even if Layer has 2d or 3d neurons
+    DoubleVector2d deltas_; // [sample_idx][neuron_idx] 
+protected:
+    ActivationFunction *f_;
+    double learning_rate_;
 };
 
-class NormLayer : public Layer {
+/*class NormLayer : public Layer {
 };*/
 
-class FullConnectedLayer : public Layer {
+class FullyConnectedLayer : public Layer {
 public:
-    FullConnectedLayer(int num_neurons, ActivationFunction *f, double learning_rate) : f_(f), Layer(learning_rate) {
+    FullyConnectedLayer(int num_neurons, ActivationFunction *f, double learning_rate) : Layer(learning_rate, f) {
         neurons_.resize(num_neurons);
         edges_.resize(num_neurons);
     }
 
-    virtual ~FullConnectedLayer() {
-        for (int i=0; i<neurons_.size(); i++) {
+    virtual ~FullyConnectedLayer() {
+        /*for (int i=0; i<neurons_.size(); i++) {
             for (int j=0; j<edges_[i].size(); j++) {
                 delete edges_[i][j].w.GetWeightInstance();
             }
-        }
+        }*/
     }   
 
     virtual void ConnectLayer(Layer *layer) {
-        Weight weight;
+        //Weight weight;
         int num_output_neurons = layer->neurons_.size();
         
         for (int i=0; i<num_output_neurons; i++) {
@@ -224,22 +356,14 @@ public:
         for (int i=0; i<neurons_.size(); i++) {
             edges_[i].resize(num_output_neurons);
             for (int j=0; j<num_output_neurons; j++) {
-                double *valp = new double(GenRandom(-1.0, 1.0));
+                //double *valp = new double(GenRandom(-1.0, 1.0));
 
-                assert(-1.0 <= *valp && *valp <= 1.0);
-                weight.SetWeightInstance(valp);
+                //assert(-1.0 <= *valp && *valp <= 1.0);
+                //weight.SetWeightInstance(valp);
                 edges_[i][j].to = j;
-                edges_[i][j].w = weight;
+                edges_[i][j].w = GenRandom(-1.0, 1.0);//weight;
             }
         }
-    }
-
-    virtual void CalculateOutput() {
-        assert(!calculated_);
-        for (int i=0; i<neurons_.size(); i++) {
-            neurons_[i].z = f_->Calculate(neurons_[i].u, neurons_);
-        }
-        calculated_ = true;
     }
 
     virtual void Propagate(Layer *layer) {
@@ -252,7 +376,7 @@ public:
         for (int i=0; i<neurons_.size(); i++) {
             for (int j=0; j<edges_[i].size(); j++) {
                 struct Edge e = edges_[i][j];
-                layer->neurons_[e.to].u += e.w.GetWeight() * neurons_[i].z;
+                layer->neurons_[e.to].u += e.w/*.GetWeight()*/ * neurons_[i].z;
             }
         }
 
@@ -276,7 +400,7 @@ public:
             for (int j=0; j<edges_.size(); j++) {
                 for (int i=0; i<edges_[j].size(); i++) {
                     int k = edges_[j][i].to;
-                    double w = edges_[j][i].w.GetWeight();
+                    double w = edges_[j][i].w/*.GetWeight()*/;
 
                     delta[j] += next_delta[k] * w * f_->CalculateDerivative(neurons_[j].u);
                 }
@@ -291,7 +415,7 @@ public:
                 for (int k=0; k<edges_[i].size(); k++) {
                     int j = edges_[i][k].to;
         
-                    edges_[i][k].w.SubWeight(learning_rate_ * deltas[l][j] * neurons_[i].z / deltas.size()); // Wji -= e * delta[j] * z[i] / N
+                    edges_[i][k].w/*.SubWeight(*/-= learning_rate_ * deltas[l][j] * neurons_[i].z / deltas.size()/*)*/; // Wji -= e * delta[j] * z[i] / N
                 }
             }
         }
@@ -307,8 +431,8 @@ public:
     }
 
 private:
+    EdgeVector2d edges_;
     vector<double> biases_;
-    ActivationFunction *f_;
 };
 
 class ConvNet {
@@ -320,6 +444,7 @@ public:
         int last_idx = layers_.size()-1;
 
         assert(last_idx >= 1);
+        assert(layers_[last_idx]->calculated_);
         vector<struct Neuron> &neurons = layers_[last_idx]->neurons_;
         assert(neurons.size() == output.size());
 
@@ -353,16 +478,16 @@ public:
         assert(last_neurons.size() == output.size());
 
         for (int i=0; i<first_neurons.size(); i++) {
-            first_neurons[i].u = input[i];
+            first_neurons[i].z = input[i];
         }
 
-        layers_[0]->calculated_ = false;
-        for (int i=0; i<layers_.size()-1; i++) {
-            layers_[i]->CalculateOutput();
+        layers_[0]->calculated_ = true;
+        for (int i=0; i<=last_idx-1; i++) {
             layers_[i]->Propagate(layers_[i+1]);
+            layers_[i]->CalculateOutput(layers_[i+1]);
         }
-        layers_[last_idx]->CalculateOutput();
 
+        assert(layers_[last_idx]->calculated_);
         for (int i=0; i<last_neurons.size(); i++) {
             output[i] = last_neurons[i].z;
         }
@@ -413,19 +538,18 @@ private:
     //ErrorFunction *e_;
 };
 
-int main(void) {
+void TestFullyConnectedLayer() {
     //SquaredError sqe = SquaredError();
     ConvNet net/*&sqe*/;
-    RectifiedLinear rel;
+    TangentSigmoid tanh;
     Softmax softmax;
     vector<double> input;
     vector<double> output;
 
     srand(time(NULL));
-    printf("%f\n", rel.CalculateDerivative(0.5));
-    net.AppendLayer(new FullConnectedLayer(3, &rel, 10e-4));
-    net.AppendLayer(new FullConnectedLayer(2, &rel, 10e-4));
-    net.AppendLayer(new FullConnectedLayer(3, &softmax, 10e-4));
+    net.AppendLayer(new FullyConnectedLayer(3, &tanh, 0.0005));
+    net.AppendLayer(new FullyConnectedLayer(2, &tanh, 0.0005));
+    net.AppendLayer(new FullyConnectedLayer(3, &softmax, 0.0005));
     net.ConnectLayers();
 
     for (int j=0; j<10000; j++) {
@@ -444,6 +568,7 @@ int main(void) {
             inputs[0] = input;
             outputs[0] = output;
             net.TrainNetwork(inputs, outputs);
+            printf("%d: \n", j);
             printf("input: ");
             for (int k=0; k<3; k++) {
                 printf("%f ", input[k]);
@@ -461,5 +586,57 @@ int main(void) {
             puts("");
         }
     }
-
 }
+
+void TestConvLayer() {
+    BitMapProcessor bmp;
+    ConvNet net/*&sqe*/;
+    RectifiedLinear rel;
+    LogisticSigmoid sigmoid;
+    Softmax softmax;
+    vector<double> input;
+    vector<double> output;
+    ConvLayer *cl = new ConvLayer(128, 3, 1, 9, 1, &sigmoid, 0.0005);
+
+    srand(time(NULL));
+    printf("%f\n", rel.CalculateDerivative(0.5));
+    net.AppendLayer(cl);
+    net.AppendLayer(new FullyConnectedLayer(128*128, &sigmoid, 0.0005));
+    net.ConnectLayers();
+        
+    bmp.loadData("lena.bmp");
+    assert(bmp.height() == 128);
+    assert(bmp.width() == 128);
+    input.resize(128*128*3);
+    for (int i=0; i<128; i++) {
+        for (int j=0; j<128; j++) {
+            input[i*128 + j] = bmp.getColor(j, i).r/256.0; 
+            input[128*128 + i*128 + j] = bmp.getColor(j, i).g/256.0; 
+            input[2*128*128 + i*128 + j] = bmp.getColor(j, i).b/256.0; 
+        }
+    }
+    output.resize(128*128);
+    net.PropagateLayers(input, output);
+    double maxval = -1.0;
+    for (int i=0; i<128; i++) {
+        for (int j=0; j<128; j++) {
+            maxval = max(maxval, output[i*128+j]);
+        }
+    }
+
+    for (int i=0; i<128; i++) {
+        for (int j=0; j<128; j++) {
+            printf("%f ", output[i*128+j]);
+            int val = (int)(output[i*128 + j]*256/maxval);
+            bmp.setColor(j, i, val, val, val);
+        }puts("");
+    }
+    bmp.writeData("output.bmp");
+}
+
+
+int main() {
+    //TestFullyConnectedLayer();
+    TestConvLayer();
+}
+
