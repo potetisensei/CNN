@@ -25,6 +25,7 @@ public:
     DoubleVector2d deltas_; // [sample_idx][neuron_idx] 
 protected:
     ActivationFunction *f_;
+public:
     double learning_rate_;
 };
 
