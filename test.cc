@@ -162,7 +162,7 @@ void TestDeepLearning(){
   mt19937 mt( time( NULL ) );
   int MAX_FILE = 12499;
   char filename[256];
-  int LOOP_N = 1000;
+  int LOOP_N = 100;//25000-2;//1000;
   int namonakiacc = 0;
   vector<double> in, out;
   DoubleVector2d ins, outs;
@@ -174,12 +174,12 @@ void TestDeepLearning(){
   RectifiedLinear rel;
   LogisticSigmoid sigmoid;
   Softmax softmax;
-  ConvLayer *conv1 = new ConvLayer(128, 3, 1, 5, 8, &sigmoid, 0.0005);
-  PoolLayer *pool1 = new PoolLayer(128, 8, 2, 3);
-  ConvLayer *conv2 = new ConvLayer(64, 8, 1, 5, 16, &sigmoid, 0.0005);
-  PoolLayer *pool2 = new PoolLayer(64, 16, 2, 3);
-  FullyConnectedLayer *full1 = new FullyConnectedLayer(32*32*16, &softmax, 0.0005);
-  FullyConnectedLayer *full2 = new FullyConnectedLayer(2, &sigmoid, 0.0005);
+  ConvLayer *conv1 = new ConvLayer(64, 3, 2, 5, 8, &sigmoid, 0.00005);
+  PoolLayer *pool1 = new PoolLayer(32, 8, 2, 3);
+  ConvLayer *conv2 = new ConvLayer(16, 8, 2, 5, 16, &sigmoid, 0.00005);
+  PoolLayer *pool2 = new PoolLayer(8, 16, 4, 3);
+  FullyConnectedLayer *full1 = new FullyConnectedLayer(2*2*16, &softmax, 0.00005);
+  FullyConnectedLayer *full2 = new FullyConnectedLayer(2, &sigmoid, 0.00005);
   
 
   srand(time(NULL));
@@ -192,54 +192,54 @@ void TestDeepLearning(){
   net.ConnectLayers();
 
   vector<double> testin;
-  pixels = stbi_load( "processed/dog.12499.jpg" , &width , &height , &bpp , 0 );
+  pixels = stbi_load( "processed/dog.0.jpg" , &width , &height , &bpp , 0 );
   for( int k = 0; k < 3; k++ )
     for( int i = 0; i < height; i++ )
       for( int j = 0; j < width; j++ )
 	testin.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
   
-  
-  for( int loop = 0; loop < LOOP_N; loop++ ){
-    in.clear();
-    out.clear();
-  
-    if( mt() % 2 == 0 ){
-      out.push_back( 1.0 ); out.push_back( 0.0 );
-      sprintf( filename , "processed/cat.%d.jpg" , mt()%MAX_FILE );
-    } else {
-      out.push_back( 0.0 ); out.push_back( 1.0 );
-      sprintf( filename , "processed/dog.%d.jpg" , mt()%MAX_FILE );
-    }
-  
-    pixels = stbi_load( filename , &width , &height , &bpp , 0 );
-
-    for( int k = 0; k < 3; k++ )
-      for( int i = 0; i < height; i++ )
-	for( int j = 0; j < width; j++ )
-	  in.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
-
-    ins.clear();
-    ins.push_back( in );
-    outs.clear();
-    outs.push_back( out );
-
-    net.TrainNetwork(ins, outs);
-    vector<double> out2(2);
-
-    net.PropagateLayers( testin , out2 );
-
-    cout << filename << endl;
-    cout << "o: " << out2[0] << " " << out2[1] << endl;
-    if (out2[0] > 0.3) {
-        conv1->learning_rate_ = 0.000005;
-        conv1->learning_rate_ = 0.000005;
-        full1->learning_rate_ = 0.000005;
-        full2->learning_rate_ = 0.000005;
-    }
-        
-    cout << endl;
+  for (int o=0; o<1000; o++) {
+      for( int loop = 0; loop < LOOP_N; loop++ ){
+        in.clear();
+        out.clear();
+      
+        if( /*mt()*/loop % 2 == 0 ){
+          out.push_back( 1.0 ); out.push_back( 0.0 );
+          sprintf( filename , "processed/cat.%d.jpg" , loop/2/*mt()%MAX_FILE*/ );
+        } else {
+          out.push_back( 0.0 ); out.push_back( 1.0 );
+          sprintf( filename , "processed/dog.%d.jpg" , loop/2/*mt()%MAX_FILE*/ );
+        }
+      
+        pixels = stbi_load( filename , &width , &height , &bpp , 0 );
+    
+        for( int k = 0; k < 3; k++ )
+          for( int i = 0; i < height; i++ )
+    	for( int j = 0; j < width; j++ )
+    	  in.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
+    
+        ins.clear();
+        ins.push_back( in );
+        outs.clear();
+        outs.push_back( out );
+    
+        net.TrainNetwork(ins, outs);
+        vector<double> out2(2);
+    
+        net.PropagateLayers( testin , out2 );
+    
+        cout << filename << endl;
+        cout << "o: " << out2[0] << " " << out2[1] << endl;
+        /*if (out2[0] > 0.3) {
+            conv1->learning_rate_ = 0.000005;
+            conv1->learning_rate_ = 0.000005;
+            full1->learning_rate_ = 0.000005;
+            full2->learning_rate_ = 0.000005;
+        }*/
+            
+        cout << endl;
+      }
   }
-
 }
 
 int main() {
