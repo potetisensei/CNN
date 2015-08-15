@@ -7,27 +7,10 @@
 using namespace std;
 
 class PoolLayer : public Layer {
-    PoolLayer(int breadth_neuron, int num_channels, int stride, int breadth_filter)
-        : breadth_neuron_(breadth_neuron), 
-          stride_(stride),
-          breadth_filter_(breadth_filter) {
-        breadth_output_ = (breadth_neuron-1)/stride + 1;
-    }
-
+    PoolLayer(int breadth_neuron, int num_channels, int stride, int breadth_filter);
     virtual ~PoolLayer() {}
-
     virtual void ConnectLayer(Layer *layer) { assert(0); }
-
-    virtual void CalculateOutput(Layer *layer) {
-        vector<struct Neuron> &neurons = layer->neurons_;
-
-        assert(!layer->calculated_);
-        for (int i=0; i<neurons.size(); i++) {
-            neurons[i].z = f_->Calculate(neurons[i].u, neurons);
-        }
-        layer->calculated_ = true;
-    }
-
+    virtual void CalculateOutput(Layer *layer);
     virtual void Propagate(Layer *layer) { assert(0); }
     virtual void BackPropagate(DoubleVector2d next_deltas) { assert(0); }
     virtual void UpdateWeight(DoubleVector2d deltas) { assert(0); }

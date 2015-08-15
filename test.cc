@@ -11,7 +11,7 @@
 using namespace std;
 
 void TestFullyConnectedLayer() {
-    ConvNet net;
+    NeuralNet net;
     TangentSigmoid tanh;
     Softmax softmax;
     vector<double> input;
@@ -61,7 +61,7 @@ void TestFullyConnectedLayer() {
 
 void TestConvLayer() {
     BitMapProcessor bmp;
-    ConvNet net;
+    NeuralNet net;
     RectifiedLinear rel;
     LogisticSigmoid sigmoid;
     Softmax softmax;
@@ -70,7 +70,6 @@ void TestConvLayer() {
     ConvLayer *cl = new ConvLayer(128, 3, 1, 9, 1, &sigmoid, 0.0005);
 
     srand(time(NULL));
-    printf("%f\n", rel.CalculateDerivative(0.5));
     net.AppendLayer(cl);
     net.AppendLayer(new FullyConnectedLayer(128*128, &sigmoid, 0.0005));
     net.ConnectLayers();
