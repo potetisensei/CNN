@@ -19,7 +19,6 @@ class PoolLayer : public Layer {
     virtual void UpdateWeight(DoubleVector2d deltas) {}
     virtual void UpdateBias(DoubleVector2d deltas) {}
 
-    DoubleVector2d deltas_; // [sample_idx][neuron_idx] 
 private:
     int breadth_neuron_;
     int num_channels_;
