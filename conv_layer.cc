@@ -99,55 +99,75 @@ void ConvLayer::BackPropagate( DoubleVector2d next_deltas ){
   int size = breadth_output_ * breadth_output_;
   int size2 = breadth_neuron_ * breadth_neuron_;
   
-  deltas_.resize( next_deltas.size() );
-  for( int l = 0; l < deltas_.size(); l++ ){
-    deltas_[l].resize( size2 );
-    for( int m = 0; m < num_filters_; m++ ){ 
-      for( int i = 0; i < breadth_output_; i++ ){
-	for( int j = 0; j < breadth_output_; j++ ){
-	  int neuron_idx1 = m*size + i*breadth_output_ + j;
-	  double sum_conv = 0.0;
+  deltas_.resize(next_deltas.size());
+  for (int l=0; l<deltas_.size(); l++) {
+    vector<double> &my_delta = deltas_[l];
+    vector<double> &next_delta = next_deltas[l];
 
-	  assert( i*stride_ < breadth_neuron_ );
-	  assert( j*stride_ < breadth_neuron_ );
-
-	  for( int k = 0; k < num_channels_; k++ ){
-	    for( int p = 0; p < breadth_filter_; p++ ){
-	      for( int q = 0; q < breadth_filter_; q++ ){
-		int x = j*stride_ + q;
-		int y = i*stride_ + p;
-	      
-		int neuron_idx2 = k*size2 + y*breadth_neuron_ + x;
-
-		if (x < breadth_neuron_ && y < breadth_neuron_) {
-		  deltas_[l][neuron_idx2] += next_deltas[l][neuron_idx1] * edges_weight_[m][k][p][q] * f_->CalculateDerivative(neurons_[neuron_idx2].u);
-		}
-	      }
-	    }
-	  }
-	}
+    my_delta.resize(size2 * num_channels_);
+    for (int m=0; m<num_filters_; m++) { 
+      for (int i=0; i<breadth_output_; i++) {
+        for (int j=0; j<breadth_output_; j++) {
+          int neuron_idx1 = m*size + i*breadth_output_ + j;
+          double sum_conv = 0.0;
+  
+          assert(i*stride_ < breadth_neuron_);
+          assert(j*stride_ < breadth_neuron_);
+  
+      	  for (int k=0; k<num_channels_; k++) {
+            for (int p=0; p<breadth_filter_; p++) {
+              for (int q=0; q<breadth_filter_; q++) {
+                int x = j*stride_ + q;
+                int y = i*stride_ + p;
+                int neuron_idx2 = k*size2 + y*breadth_neuron_ + x;
+      
+                if (x < breadth_neuron_ && y < breadth_neuron_) {
+                  my_delta[neuron_idx2] += 
+                    next_delta[neuron_idx1] * 
+                    edges_weight_[m][k][p][q] * 
+                    f_->CalculateDerivative(neurons_[neuron_idx2].u);
+      	        }
+  	          }
+  	        }
+  	      }
+  	    }
       }
     }
   }
 }
 
 void ConvLayer::UpdateWeight(DoubleVector2d deltas) {
+  int size = breadth_output_ * breadth_output_;
   int size2 = breadth_neuron_ * breadth_neuron_;
-  for( int l = 0; l < deltas.size(); l++ ){
-    for( int m = 0; m < num_filters_; m++ ){
-      for( int i = 0; i < breadth_output_; i++ ){
-	for( int j = 0; j < breadth_output_; j++ ){
-	  for( int k = 0; k < num_channels_; k++ ){
-	    for( int p = 0; p < breadth_filter_; p++ ){
-	      for( int q = 0; q < breadth_filter_; q++ ){
-		int x = j*stride_ + q;
-		int y = i*stride_ + p;
-		int neuron_idx2 = k*size2 + y*breadth_neuron_ + x;
-		edges_weight_[m][k][p][q] -= learning_rate_ * deltas_[l][neuron_idx2] * neurons_[neuron_idx2].z / (breadth_output_*breadth_output_) / deltas.size();
+
+    assert(num_channels_ * size2 == neurons_.size());
+
+  for (int l=0; l<deltas.size(); l++) {
+    for (int m=0; m<num_filters_; m++) {
+      for (int i=0; i<breadth_output_; i++) {
+    	for (int j=0; j<breadth_output_; j++) {
+          int neuron_idx1 = m*size + i*breadth_output_ + j;
+
+          assert(i*stride_ < breadth_neuron_);
+          assert(j*stride_ < breadth_neuron_);
+    
+	      for (int k=0; k<num_channels_; k++) {
+	        for (int p=0; p<breadth_filter_; p++) {
+	          for (int q=0; q<breadth_filter_; q++) {
+                int x = j*stride_ + q;
+        	    int y = i*stride_ + p;
+		        int neuron_idx2 = k*size2 + y*breadth_neuron_ + x;
+
+	            if (x < breadth_neuron_ && y < breadth_neuron_) {
+	           	  edges_weight_[m][k][p][q] -= 
+                  learning_rate_ * 
+                  deltas[l][neuron_idx1] * 
+                  neurons_[neuron_idx2].z / deltas.size();
+                }
+	          }
+	        }
 	      }
 	    }
-	  }
-	}
       }
     }
   }
