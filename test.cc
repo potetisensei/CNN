@@ -174,6 +174,7 @@ void TestDeepLearning(){
   RectifiedLinear rel;
   LogisticSigmoid sigmoid;
   Softmax softmax;
+  
   ConvLayer *conv1 = new ConvLayer(64, 3, 2, 5, 8, &sigmoid, 0.00005);
   PoolLayer *pool1 = new PoolLayer(32, 8, 2, 3);
   ConvLayer *conv2 = new ConvLayer(16, 8, 2, 5, 16, &sigmoid, 0.00005);
@@ -242,8 +243,201 @@ void TestDeepLearning(){
   }
 }
 
-int main() {
+
+
+int rev( int x ){
+  int res = 0;
+
+  for( int i = 0; i < 4; i++ )
+    res += ( (x>>(i*8)) & 255 ) << (24-i*8);
+
+  return res;
+}
+
+
+double img[60000][28*28+1];
+int label[60000];
+
+void TestMNIST(){
+
+  int magic_number;
+  int N, H, W;
+  
+  vector<double> in, out;
+  DoubleVector2d ins, outs;
+
+  int namonakiacc = 0;  
+
+  NeuralNet net;
+  RectifiedLinear rel;
+  LogisticSigmoid sigmoid;
+  Softmax softmax;
+
+  /*
+  ConvLayer *conv1 = new ConvLayer(28, 1, 2, 5, 8, &sigmoid, 0.00005);
+  PoolLayer *pool1 = new PoolLayer(14, 8, 2, 3);
+  FullyConnectedLayer *full1 = new FullyConnectedLayer(7*7*8, &softmax, 0.00005);
+  FullyConnectedLayer *full2 = new FullyConnectedLayer(10, &sigmoid, 0.00005);
+  
+
+  srand(time(NULL));
+  net.AppendLayer(conv1);
+  net.AppendLayer(pool1);
+  net.AppendLayer(full1);
+  net.AppendLayer(full2);  
+  net.ConnectLayers();
+  */
+
+  FullyConnectedLayer *full1 = new FullyConnectedLayer(28*28, &sigmoid, 0.1);
+  FullyConnectedLayer *full2 = new FullyConnectedLayer(32, &sigmoid, 0.1);  
+  FullyConnectedLayer *full3 = new FullyConnectedLayer(10, &sigmoid, 0.1);
+  
+  srand(time(NULL));
+  net.AppendLayer(full1);
+  net.AppendLayer(full2);
+  net.AppendLayer(full3);    
+  net.ConnectLayers();  
+
+  FILE *fp;
+
+  fp = fopen( "train-images-idx3-ubyte" , "rb" );
+  
+  fread( &magic_number , sizeof( magic_number ) , 1 , fp );
+  magic_number = rev( magic_number );
+
+  fread( &N , sizeof( N ) , 1 , fp );
+  N = rev(N);
+
+  fread( &H , sizeof( H ) , 1 , fp );
+  H = rev(H);
+  
+  fread( &W , sizeof( W ) , 1 , fp );
+  W = rev(W);
+
+
+  for( int k = 0; k < N; k++ ){
+    if( k % (N/10) == (N/10)-1) cerr << k << " / " << N << endl;
+    for( int i = 0; i < H; i++ ){
+      for( int j = 0; j < W; j++ ){
+	unsigned char tmp;
+	fread( &tmp , sizeof( tmp ) , 1 , fp );
+	img[k][i*W+j] = (double)tmp / 256.0;
+      }
+    }
+  }
+
+  fclose( fp );
+  
+  fp = fopen( "train-labels-idx1-ubyte" , "rb" );
+
+  fread( &magic_number , sizeof( magic_number ) , 1 , fp );
+  magic_number = rev( magic_number );
+
+  fread( &N , sizeof( N ) , 1 , fp );
+  N = rev(N);
+
+  for( int k = 0; k < N; k++ ){
+    unsigned char tmp;
+    fread( &tmp , sizeof( tmp ) , 1 , fp );
+    label[k] = int(tmp);
+  }
+
+  fclose( fp );
+
+  
+  for( int loop = 0; loop < N; loop++ ){
+    if( loop % 100 == 0 ) cout << loop << " / " << N << endl;
+    in.clear();
+    out = vector<double>(10,0.0);
+
+    for( int i = 0; i < H; i++ )
+      for( int j = 0; j < W; j++ )
+	in.push_back( img[loop][i*W+j] );
+
+    out[ label[loop] ] = 1.0;
+
+
+    ins.clear();
+    ins.push_back( in );
+    outs.clear();
+    outs.push_back( out );
+    
+    net.TrainNetwork(ins, outs);
+  }
+
+
+
+  fp = fopen( "t10k-images-idx3-ubyte" , "rb" );
+  
+  fread( &magic_number , sizeof( magic_number ) , 1 , fp );
+  magic_number = rev( magic_number );
+
+  fread( &N , sizeof( N ) , 1 , fp );
+  N = rev(N);
+
+  fread( &H , sizeof( H ) , 1 , fp );
+  H = rev(H);
+  
+  fread( &W , sizeof( W ) , 1 , fp );
+  W = rev(W);
+
+
+  for( int k = 0; k < N; k++ ){
+    img[k][0] = 1.0;
+    for( int i = 0; i < H; i++ ){
+      for( int j = 0; j < W; j++ ){
+	unsigned char tmp;
+	fread( &tmp , sizeof( tmp ) , 1 , fp );
+	img[k][i*W+j] = (double)tmp / 256.0;
+      }
+    }
+  }
+
+  fclose( fp );
+  
+  fp = fopen( "t10k-labels-idx1-ubyte" , "rb" );
+
+  fread( &magic_number , sizeof( magic_number ) , 1 , fp );
+  magic_number = rev( magic_number );
+
+  fread( &N , sizeof( N ) , 1 , fp );
+  N = rev(N);
+
+  for( int k = 0; k < N; k++ ){
+    unsigned char tmp;
+    fread( &tmp , sizeof( tmp ) , 1 , fp );
+    label[k] = int(tmp);
+  }
+
+  fclose( fp );
+
+
+  for( int loop = 0; loop < N; loop++ ){
+    if( loop % 100 == 0 ) cout << loop << " / " << N << endl;
+    in.clear();
+    out = vector<double>(10,0.0);
+
+    for( int i = 0; i < H; i++ )
+      for( int j = 0; j < W; j++ )
+	in.push_back( img[loop][i*W+j] );
+
+    net.PropagateLayers( in , out );
+
+    int res = 0;
+    for( int i = 1; i < 10; i++ )
+      if( out[res] < out[i] ) res = i;
+
+    if( res == label[loop] ) namonakiacc++;
+  }
+
+  cout << namonakiacc << " / " << N << endl;
+}
+
+
+
+int main(){
   //TestFullyConnectedLayer();
   //TestPoolLayer();
-  TestDeepLearning();
+  //TestDeepLearning();
+  TestMNIST();
 }
