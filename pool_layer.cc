@@ -74,7 +74,7 @@ void PoolLayer::Propagate(Layer *layer){
 }
 
 
-void PoolLayer::BackPropagate(DoubleVector2d next_deltas) {
+void PoolLayer::BackPropagate(DoubleVector2d next_deltas, ActivationFunction *f) {
   deltas_.resize(next_deltas.size());
   for (int i=0; i<next_deltas.size(); i++) {
     deltas_[i].resize(neurons_.size());

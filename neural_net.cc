@@ -72,7 +72,7 @@ void NeuralNet::BackPropagateLayers(DoubleVector2d &dataset, DoubleVector2d &out
     layers_[last_idx-1]->UpdateWeight(deltas);
     layers_[last_idx-1]->UpdateBias(deltas);
     for (int i=last_idx-1; i>=1; i--) {
-         layers_[i]->BackPropagate(layers_[i+1]->deltas_);
+         layers_[i]->BackPropagate(layers_[i+1]->deltas_, layers_[i-1]->f_);
          layers_[i-1]->UpdateWeight(layers_[i]->deltas_);
          layers_[i-1]->UpdateBias(layers_[i]->deltas_);
     }

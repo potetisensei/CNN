@@ -1,7 +1,9 @@
 #ifndef _ACTIVATION_FUNCTION_H_
 #define _ACTIVATION_FUNCTION_H_
 
+#include <cstdio>
 #include <cmath>
+#include <cassert>
 #include <vector>
 #include <limits>
 #include "util.h"
@@ -72,10 +74,12 @@ public:
         for (int i=0; i<neurons.size(); i++) {
             denominator += exp(neurons[i].u);
         }
-        return exp(u)/denominator;
+        assert(denominator != 0.0);
+        return (double)(exp(u)/denominator);
     }
 
     virtual double CalculateDerivative(double u) {
+        assert(0);
         return -numeric_limits<double>::max();
     }
 };

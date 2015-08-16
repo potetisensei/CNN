@@ -95,7 +95,7 @@ void ConvLayer::Propagate(Layer *layer) {
     layer->calculated_ = false;
 }
  
-void ConvLayer::BackPropagate( DoubleVector2d next_deltas ){
+void ConvLayer::BackPropagate(DoubleVector2d next_deltas, ActivationFunction *f) {
   int size = breadth_output_ * breadth_output_;
   int size2 = breadth_neuron_ * breadth_neuron_;
   

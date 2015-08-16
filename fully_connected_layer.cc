@@ -44,7 +44,7 @@ void FullyConnectedLayer::Propagate(Layer *layer) {
     layer->calculated_ = false;
 }
 
-void FullyConnectedLayer::BackPropagate(DoubleVector2d next_deltas) {
+void FullyConnectedLayer::BackPropagate(DoubleVector2d next_deltas, ActivationFunction *f) {
     deltas_.resize(next_deltas.size());
     for (int i=0; i<deltas_.size(); i++) {
         vector<double> &next_delta = next_deltas[i];
@@ -58,7 +58,7 @@ void FullyConnectedLayer::BackPropagate(DoubleVector2d next_deltas) {
                 int k = edges_[j][i].to;
                 double w = edges_[j][i].w;
 
-                delta[j] += next_delta[k] * w * f_->CalculateDerivative(neurons_[j].u);
+                delta[j] += next_delta[k] * w * f->CalculateDerivative(neurons_[j].u);
             }
         }
     }
