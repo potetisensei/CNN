@@ -53,11 +53,8 @@ void PoolLayer::Propagate(Layer *layer){
 	        double z = -numeric_limits<double>::max();
             int neuron_idx2 = k*size2 + y*breadth_neuron_ + x;
 
-            printf("x, y: %d %d\n", x, y);
-            printf("breadth_neuron_: %d\n", breadth_neuron_);
 	        if (x < breadth_neuron_ && y < breadth_neuron_) {
 	          z = neurons_[neuron_idx2].z;
-              printf("z: %f\n", z);
             }
 
     	    if (maxv < z) {
