@@ -29,6 +29,7 @@ public:
     virtual void ApplyLazySubtrahend();
 
 private:
+    bool neuron_connected_;
     int breadth_neuron_;
     int num_channels_;
     int stride_;

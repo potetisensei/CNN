@@ -8,7 +8,8 @@ ConvLayer::ConvLayer(
   int num_filters, 
   ActivationFunction *f, 
   double learning_rate)
-    :  breadth_neuron_(breadth_neuron), 
+    :  neuron_connected_(false),
+       breadth_neuron_(breadth_neuron), 
        num_channels_(num_channels), 
        stride_(stride), 
        breadth_filter_(breadth_filter),
@@ -148,10 +149,9 @@ void ConvLayer::Propagate(
 }
  
 void ConvLayer::BackPropagate(
-        vector<struct Neuron> const &input, 
-        vector<double> const &next_delta, 
-        vector<double> &delta) {
-    
+    vector<struct Neuron> const &input, 
+    vector<double> const &next_delta, 
+    vector<double> &delta) {
   int area_output = breadth_output_ * breadth_output_;
   int area_input = breadth_neuron_ * breadth_neuron_;
 
