@@ -4,14 +4,15 @@ FullyConnectedLayer::FullyConnectedLayer(int num_input, int num_output, Activati
         : neuron_connected_(false),
           num_input_(num_input),
           num_output_(num_output),
-          f_(f),
-          learning_rate_(learning_rate) {}
+          learning_rate_(learning_rate),
+          Layer(f) {}
 
-void CheckInputUnits(vector<struct Neuron> const &units) {
+
+void FullyConnectedLayer::CheckInputUnits(vector<struct Neuron> const &units) {
     assert(units.size() == num_input_);
 }
 
-void ArrangeOutputUnits(vector<struct Neuron> &units) {
+void FullyConnectedLayer::ArrangeOutputUnits(vector<struct Neuron> &units) {
     units.resize(num_output_);
 }
 
@@ -26,7 +27,7 @@ void FullyConnectedLayer::ConnectNeurons(
     for (int i=0; i<num_output_; i++) {
         struct Weight w;
 
-        w.val = GenRandom(-0.5, 0.5)
+        w.val = GenRandom(-0.5, 0.5);
         w.lazy_sub = 0.0;
         w.count = 0;
         biases_[i] = w;
@@ -52,7 +53,7 @@ void FullyConnectedLayer::CalculateOutputUnits(vector<struct Neuron> &units) {
     assert(units.size() == num_output_);
 
     for (int i=0; i<num_output_; i++) {
-        units[i].z = f_(units[i].u);
+        units[i].z = f_->Calculate(units[i].u, units);
     }
 }
 
@@ -75,19 +76,20 @@ void FullyConnectedLayer::Propagate(
 
     assert(biases_.size() == num_output_);
     for (int i=0; i<num_output_; i++) {
-        output[i].u += biases_[i];
+        output[i].u += biases_[i].val;
     }
 }
 
 void FullyConnectedLayer::BackPropagate(
         vector<struct Neuron> const &input,
         vector<double> const &next_delta,
+        ActivationFunction *f,
         vector<double> &delta) {
     assert(input.size() == num_input_);
-    assert(delta.size() == num_input_);
     assert(next_delta.size() == num_output_);
-
     assert(weights_.size() == num_input_);
+
+    delta.resize(num_input_);
     for (int i=0; i<num_input_; i++) {
         delta[i] = 0.0;
 
@@ -96,7 +98,7 @@ void FullyConnectedLayer::BackPropagate(
             double w = weights_[i][j].val;
 
             delta[i] += 
-                next_delta[j] * w * f_->CalculateDerivative(input[i].u);
+                next_delta[j] * w * f->CalculateDerivative(input[i].u);
         }
     }
 }

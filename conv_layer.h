@@ -24,7 +24,7 @@ public:
     virtual void ConnectNeurons(vector<struct Neuron> const &input, vector<struct Neuron> const &output);
     virtual void CalculateOutputUnits(vector<struct Neuron> &units);
     virtual void Propagate(vector<struct Neuron> const &input, vector<struct Neuron> &output);
-    virtual void BackPropagate(vector<struct Neuron> const &input, vector<double> const &next_delta, vector<double> &delta);
+    virtual void BackPropagate(vector<struct Neuron> const &input, vector<double> const &next_delta, ActivationFunction *f, vector<double> &delta);
     virtual void UpdateLazySubtrahend(vector<struct Neuron> const &input, const vector<double> &next_delta);
     virtual void ApplyLazySubtrahend();
 
@@ -39,7 +39,6 @@ private:
     int num_input_;
     int num_output_;
     double learning_rate_;
-    ActivationFunction *f_;
     vector<struct Weight> biases_;
     WeightVector4d weights_; // [filter_idx][channel_idx][y][x], weight-sharing
 };

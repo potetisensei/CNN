@@ -9,16 +9,20 @@ using namespace std;
 
 class Layer {
 public:
-    Layer() {}
+    Layer() : f_(NULL) {}
+    Layer(ActivationFunction *f) : f_(f) {}
+
     virtual ~Layer() {}
-    virtual void CheckInputUnits(vector<struct Neuron> const &units);
-    virtual void ArrangeOutputUnits(vector<struct Neuron> &units);
-    virtual void ConnectNeurons(vector<struct Neuron> const &input, vector<struct Neuron> const &output);
-    virtual void CalculateOutputUnits(vector<struct Neuron> &units);
-    virtual void Propagate(vector<struct Neuron> const &input, vector<struct Neuron> &output);
-    virtual void BackPropagate(vector<struct Neuron> const &input, vector<double> const &next_delta, vector<double> &delta);
-    virtual void UpdateLazySubtrahend(vector<struct Neuron> const &input, const vector<double> &next_delta);
-    virtual void ApplyLazySubtrahend();
+    virtual void CheckInputUnits(vector<struct Neuron> const &units) { assert(0); }
+    virtual void ArrangeOutputUnits(vector<struct Neuron> &units) { assert(0); }
+    virtual void ConnectNeurons(vector<struct Neuron> const &input, vector<struct Neuron> const &output) { assert(0); }
+    virtual void CalculateOutputUnits(vector<struct Neuron> &units) { assert(0); }
+    virtual void Propagate(vector<struct Neuron> const &input, vector<struct Neuron> &output) { assert(0); }
+    virtual void BackPropagate(vector<struct Neuron> const &input, vector<double> const &next_delta, ActivationFunction *f, vector<double> &delta) { assert(0); }
+    virtual void UpdateLazySubtrahend(vector<struct Neuron> const &input, const vector<double> &next_delta) { assert(0); }
+    virtual void ApplyLazySubtrahend() { assert(0); }
+
+    ActivationFunction *f_;
 };
 
 #endif

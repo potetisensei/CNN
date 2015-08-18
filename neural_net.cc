@@ -1,5 +1,15 @@
 #include "neural_net.h"
 
+NeuralNet::NeuralNet() : layer_connected_(false)  {
+    all_neurons_.resize(1);
+}
+
+void NeuralNet::SetInputSize(int size) {
+    assert(!layer_connected_);
+    assert(all_neurons_.size() > 0);
+    all_neurons_[0].resize(size);
+}
+
 void NeuralNet::AppendLayer(Layer *layer) {
     assert(!layer_connected_);
     layers_.push_back(layer);
@@ -7,78 +17,84 @@ void NeuralNet::AppendLayer(Layer *layer) {
 
 void NeuralNet::ConnectLayers() {
     assert(!layer_connected_);
-    for (int i=0; i<layers_.size()-1; i++) {
-        layers_[i]->ConnectLayer(layers_[i+1]);
+    assert(layers_.size() > 0);
+
+    all_neurons_.resize(layers_.size()+1);
+    for (int i=0; i<layers_.size(); i++) {
+        layers_[i]->CheckInputUnits(all_neurons_[i]);
+        layers_[i]->ArrangeOutputUnits(all_neurons_[i+1]);
+        layers_[i]->ConnectNeurons(all_neurons_[i], all_neurons_[i+1]);
     }
     layer_connected_ = true;
 }
 
-void NeuralNet::PropagateLayers(vector<double> &input, vector<double> &output) {
-    int last_idx = layers_.size()-1;
-
+void NeuralNet::PropagateLayers(
+        vector<double> &input, 
+        vector<double> &output) {
     assert(layer_connected_);
-    assert(last_idx >= 1);
+    assert(all_neurons_.size() == layers_.size()+1);
 
-    vector<struct Neuron> &first_neurons = layers_[0]->neurons_;
-    vector<struct Neuron> &last_neurons = layers_[last_idx]->neurons_;
+    vector<struct Neuron> &first_neurons = all_neurons_[0];
+    vector<struct Neuron> &last_neurons = all_neurons_[layers_.size()];
+
     assert(first_neurons.size() == input.size());
     assert(last_neurons.size() == output.size());
 
-    for (int i=0; i<first_neurons.size(); i++) {
+    for (int i=0; i<input.size(); i++) {
         first_neurons[i].z = input[i];
     }
 
-    layers_[0]->calculated_ = true;
-    for (int i=0; i<=last_idx-1; i++) {
-        layers_[i]->Propagate(layers_[i+1]);
-        layers_[i]->CalculateOutput(layers_[i+1]);
+    for (int i=0; i<layers_.size(); i++) {
+        layers_[i]->Propagate(all_neurons_[i], all_neurons_[i+1]);
+        layers_[i]->CalculateOutputUnits(all_neurons_[i+1]);
     }
 
-    assert(layers_[last_idx]->calculated_);
-    for (int i=0; i<last_neurons.size(); i++) {
+    for (int i=0; i<output.size(); i++) {
         output[i] = last_neurons[i].z;
     }
 }
 
-void NeuralNet::BackPropagateLayers(DoubleVector2d &dataset, DoubleVector2d &outputs) {
-    int last_idx = layers_.size()-1;
-
+void NeuralNet::BackPropagateLayers(vector<double> &expected) {
     assert(layer_connected_);
-    assert(last_idx >= 1);
-    assert(dataset.size() == outputs.size());
-    DoubleVector2d &deltas = layers_[last_idx]->deltas_;
 
-    deltas.resize(dataset.size());
-    for (int i=0; i<dataset.size(); i++) {
-        assert(dataset[i].size() == outputs[i].size());
-        deltas[i].resize(dataset[i].size());
-        for (int j=0; j<dataset[i].size(); j++) {
-            deltas[i][j] = outputs[i][j] - dataset[i][j];
-        }
+    vector<double> delta;
+    vector<double> prev_delta;
+    int last_idx = layers_.size();
+    assert(last_idx+1 == all_neurons_.size());
+    vector<struct Neuron> &last_neurons = all_neurons_[last_idx];
+
+    assert(last_neurons.size() == expected.size());
+    
+    delta.resize(last_neurons.size());
+    for (int i=0; i<last_neurons.size(); i++) {
+        delta[i] = last_neurons[i].z - expected[i];
     }
 
-    layers_[last_idx-1]->UpdateWeight(deltas);
-    layers_[last_idx-1]->UpdateBias(deltas);
     for (int i=last_idx-1; i>=1; i--) {
-         layers_[i]->BackPropagate(layers_[i+1]->deltas_, layers_[i-1]->f_);
-         layers_[i-1]->UpdateWeight(layers_[i]->deltas_);
-         layers_[i-1]->UpdateBias(layers_[i]->deltas_);
+         layers_[i]->UpdateLazySubtrahend(all_neurons_[i], delta);
+         layers_[i]->BackPropagate(all_neurons_[i], delta, layers_[i-1]->f_, prev_delta);
+         delta = prev_delta;
     }
+    layers_[0]->UpdateLazySubtrahend(all_neurons_[0], delta);
 }
 
 void NeuralNet::TrainNetwork(DoubleVector2d &inputs, DoubleVector2d &expected_outputs) {
-    DoubleVector2d actual_outputs;
-    int last_idx = layers_.size()-1;
     assert(layer_connected_);
-    assert(last_idx >= 1);
-    vector<struct Neuron> &last_neurons = layers_[last_idx]->neurons_;
 
+    vector<double> tmp;
+    int last_idx = layers_.size();
+    assert(last_idx+1 == all_neurons_.size());
+    vector<struct Neuron> &last_neurons = all_neurons_[last_idx];
+
+    tmp.resize(last_neurons.size());
     assert(inputs.size() == expected_outputs.size());
-    actual_outputs.resize(inputs.size());
+
     for (int i=0; i<inputs.size(); i++) {
-        actual_outputs[i].resize(last_neurons.size());
-        PropagateLayers(inputs[i], actual_outputs[i]);
+        PropagateLayers(inputs[i], tmp);
+        BackPropagateLayers(expected_outputs[i]);
     }
 
-    BackPropagateLayers(expected_outputs, actual_outputs);
+    for (int i=last_idx-1; i>=0; i--) {
+         layers_[i]->ApplyLazySubtrahend();
+    }
 }

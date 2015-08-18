@@ -10,13 +10,14 @@ using namespace std;
 
 class NeuralNet {
 public:
-    NeuralNet() : layer_connected_(false)  {}
+    NeuralNet();
     ~NeuralNet() {}
 
+    void SetInputSize(int size);
     void AppendLayer(Layer *layer);
     void ConnectLayers();
     void PropagateLayers(vector<double> &input, vector<double> &output);
-    void BackPropagateLayers(vector<double> &input, vector<double> &output);
+    void BackPropagateLayers(vector<double> &expected);
     void TrainNetwork(DoubleVector2d &inputs, DoubleVector2d &expected_outputs);
 
 private:

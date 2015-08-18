@@ -30,11 +30,11 @@ PoolLayer::PoolLayer(
   num_output_ = num_output;
 }
 
-void CheckInputUnits(vector<struct Neuron> const &units) {
+void PoolLayer::CheckInputUnits(vector<struct Neuron> const &units) {
   assert(units.size() == num_input_);
 }
 
-void ArrangeOutputUnits(vector<struct Neuron> &units) {
+void PoolLayer::ArrangeOutputUnits(vector<struct Neuron> &units) {
   units.resize(num_output_);
 }
 
@@ -50,13 +50,12 @@ void PoolLayer::ConnectNeurons(
   neuron_connected_ = true;
 }
 
-void FullyConnectedLayer::CalculateOutputUnits(vector<struct Neuron> &units) {
-    assert(units.size() == num_output_);
-
-    // do nothing
+void PoolLayer::CalculateOutputUnits(vector<struct Neuron> &units) {
+  assert(units.size() == num_output_);
+  // do nothing
 }
 
-void FullyConnectedLayer::Propagate(
+void PoolLayer::Propagate(
     vector<struct Neuron> const &input,
     vector<struct Neuron> &output) {
   int area_output = breadth_output_ * breadth_output_;
@@ -106,28 +105,29 @@ void FullyConnectedLayer::Propagate(
   propagated_ = true;
 }
 
-void ConvLayer::BackPropagate(
+void PoolLayer::BackPropagate(
     vector<struct Neuron> const &input,
     vector<double> const &next_delta,
+    ActivationFunction *f,
     vector<double> &delta) {
   assert(propagated_);
   assert(input.size() == num_input_);
-  assert(delta.size() == num_input_);
   assert(next_delta.size() == num_output_);
   assert(maxid.size() == num_output_);
 
+  delta.resize(num_input_);
   for (int i=0; i<num_input_; i++) {
     delta[i] = 0.0;
   }
 
   for (int i=0; i<num_output_; i++) {
-    delta[maxid[i]] += next_deltas[i];
+    delta[maxid[i]] += next_delta[i];
   }
 
   propagated_ = false;
 }
 
-void ConvLayer::UpdateLazySubtrahend(
+void PoolLayer::UpdateLazySubtrahend(
     vector<struct Neuron> const &input,
     const vector<double> &next_delta) {
   assert(input.size() == num_input_);
@@ -136,6 +136,6 @@ void ConvLayer::UpdateLazySubtrahend(
   // do nothing
 }
 
-void ConvLayer::ApplyLazySubtrahend() {
+void PoolLayer::ApplyLazySubtrahend() {
   // do nothing
 }
