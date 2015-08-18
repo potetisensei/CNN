@@ -23,7 +23,7 @@ public:
     virtual void Propagate(Layer *layer);
     virtual void BackPropagate(DoubleVector2d next_deltas, ActivationFunction *f);
     virtual void UpdateWeight(DoubleVector2d deltas);
-    virtual void UpdateBias(DoubleVector2d deltas){ }
+    virtual void UpdateBias(DoubleVector2d deltas);
 
 private:
     int breadth_neuron_;

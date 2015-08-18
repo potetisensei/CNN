@@ -91,5 +91,11 @@ void NeuralNet::TrainNetwork(DoubleVector2d &inputs, DoubleVector2d &expected_ou
         PropagateLayers(inputs[i], actual_outputs[i]);
     }
 
+    /*
+    for( int i = 0; i < actual_outputs[0].size(); i++ )
+      printf( "%.3lf " , actual_outputs[0][i] );
+    printf( "\n" );
+    */
+
     BackPropagateLayers(expected_outputs, actual_outputs);
 }

@@ -45,6 +45,8 @@ void FullyConnectedLayer::Propagate(Layer *layer) {
 }
 
 void FullyConnectedLayer::BackPropagate(DoubleVector2d next_deltas, ActivationFunction *f) {
+  double deltamax = -1000;
+  double deltamin = 1000;
     deltas_.resize(next_deltas.size());
     for (int i=0; i<deltas_.size(); i++) {
         vector<double> &next_delta = next_deltas[i];
@@ -59,9 +61,12 @@ void FullyConnectedLayer::BackPropagate(DoubleVector2d next_deltas, ActivationFu
                 double w = edges_[j][i].w;
 
                 delta[j] += next_delta[k] * w * f->CalculateDerivative(neurons_[j].u);
+		deltamax = max( deltamax , delta[j] );
+		deltamin = min( deltamin , delta[j] );
             }
         }
     }
+    //printf( "fullydelta %lf %lf\n" , deltamax , deltamin );
 }
 
 void FullyConnectedLayer::UpdateWeight(DoubleVector2d deltas) {

@@ -400,7 +400,7 @@ void TestMNIST(){
 
   int lloop = 0;
   int tloop = 0;
-  int loop_n = 50;
+  int loop_n = 100;
 
   for( int loop = 1; loop < loop_n; loop++ ){
     cout << loop << " / " << loop_n << endl;
@@ -442,6 +442,13 @@ void TestMNIST(){
     }
 
     cout << "ac : " << namonakiacc << " / " << 100 << endl;
+
+    if( loop == loop_n-1 ){
+      int addc = 0;
+      printf( "addc : " );
+      scanf( "%d" , &addc );
+      loop_n += addc;
+    }
   }
 
   namonakiacc = 0;

@@ -75,13 +75,19 @@ void PoolLayer::Propagate(Layer *layer){
 
 
 void PoolLayer::BackPropagate(DoubleVector2d next_deltas, ActivationFunction *f) {
+  double deltamax = -1000;
+  double deltamin = 1000;
   deltas_.resize(next_deltas.size());
   for (int i=0; i<next_deltas.size(); i++) {
     deltas_[i].resize(neurons_.size());
     fill(deltas_[i].begin(), deltas_[i].end(), 0.0);
 
     for (int j=0; j<next_deltas[i].size(); j++) {
-      deltas_[i][maxid[j]] += next_deltas[i][j];
+      deltas_[i][maxid[j]] += next_deltas[i][j] * f->CalculateDerivative(neurons_[maxid[j]].u);
+      deltamax = max( deltamax , deltas_[i][maxid[j]] );
+      deltamin = min( deltamin , deltas_[i][maxid[j]] );
     }
   }
+
+  //printf( "pooldelta : %lf %lf\n" , deltamax , deltamin );
 }
