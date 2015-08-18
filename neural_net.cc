@@ -1,35 +1,22 @@
 #include "neural_net.h"
 
-void NeuralNet::GetOutput(vector<double> &output) {
-    int last_idx = layers_.size()-1;
-
-    assert(last_idx >= 1);
-    assert(layers_[last_idx]->calculated_);
-    vector<struct Neuron> &neurons = layers_[last_idx]->neurons_;
-    assert(neurons.size() == output.size());
-
-    for (int i=0; i<neurons.size(); i++) {
-        output[i] = neurons[i].z;
-    }
-}
-
 void NeuralNet::AppendLayer(Layer *layer) {
-    assert(!connected_);
+    assert(!layer_connected_);
     layers_.push_back(layer);
 }
 
 void NeuralNet::ConnectLayers() {
-    assert(!connected_);
+    assert(!layer_connected_);
     for (int i=0; i<layers_.size()-1; i++) {
         layers_[i]->ConnectLayer(layers_[i+1]);
     }
-    connected_ = true;
+    layer_connected_ = true;
 }
 
 void NeuralNet::PropagateLayers(vector<double> &input, vector<double> &output) {
     int last_idx = layers_.size()-1;
 
-    assert(connected_);
+    assert(layer_connected_);
     assert(last_idx >= 1);
 
     vector<struct Neuron> &first_neurons = layers_[0]->neurons_;
@@ -56,6 +43,7 @@ void NeuralNet::PropagateLayers(vector<double> &input, vector<double> &output) {
 void NeuralNet::BackPropagateLayers(DoubleVector2d &dataset, DoubleVector2d &outputs) {
     int last_idx = layers_.size()-1;
 
+    assert(layer_connected_);
     assert(last_idx >= 1);
     assert(dataset.size() == outputs.size());
     DoubleVector2d &deltas = layers_[last_idx]->deltas_;
@@ -81,6 +69,7 @@ void NeuralNet::BackPropagateLayers(DoubleVector2d &dataset, DoubleVector2d &out
 void NeuralNet::TrainNetwork(DoubleVector2d &inputs, DoubleVector2d &expected_outputs) {
     DoubleVector2d actual_outputs;
     int last_idx = layers_.size()-1;
+    assert(layer_connected_);
     assert(last_idx >= 1);
     vector<struct Neuron> &last_neurons = layers_[last_idx]->neurons_;
 
