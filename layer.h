@@ -11,13 +11,14 @@ class Layer {
 public:
     Layer() {}
     virtual ~Layer() {}
-    virtual void CheckInputUnits(vector<struct Neuron> const &units) { assert(0); } 
-    virtual void ArrangeOutputUnits(vector<struct Neuron> &units) { assert(0); }
-    virtual void ConnectNeurons(vector<struct Neuron> const &input, vector<struct Neuron> const &output) { assert(0); }
-    virtual void CalculateOutputUnits(vector<struct Neuron> &units) { assert(0); }
-    virtual void Propagate(vector<struct Neuron> const &input, vector<struct Neuron> const &output) { assert(0); }
-    virtual void BackPropagate(vector<struct Neuron> const &input, vector<struct Neuron> const &output) { assert(0); }
-    virtual void UpdateWeights() { assert(0); }
+    virtual void CheckInputUnits(vector<struct Neuron> const &units);
+    virtual void ArrangeOutputUnits(vector<struct Neuron> &units);
+    virtual void ConnectNeurons(vector<struct Neuron> const &input, vector<struct Neuron> const &output);
+    virtual void CalculateOutputUnits(vector<struct Neuron> &units);
+    virtual void Propagate(vector<struct Neuron> const &input, vector<struct Neuron> &output);
+    virtual void BackPropagate(vector<struct Neuron> const &input, vector<double> const &next_delta, vector<double> &delta);
+    virtual void UpdateLazySubtrahend(vector<struct Neuron> const &input, const vector<double> &next_delta);
+    virtual void ApplyLazySubtrahend();
 };
 
 #endif

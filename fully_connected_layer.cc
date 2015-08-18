@@ -27,7 +27,8 @@ void FullyConnectedLayer::ConnectNeurons(
         struct Weight w;
 
         w.val = GenRandom(-0.5, 0.5)
-        w.delta = 0.0;
+        w.lazy_sub = 0.0;
+        w.count = 0;
         biases_[i] = w;
     }
 
@@ -38,7 +39,8 @@ void FullyConnectedLayer::ConnectNeurons(
             struct Weight w;
 
             w.val = GenRandom(-1.0, 1.0);
-            w.delta = 0.0;
+            w.lazy_sub= 0.0;
+            w.count = 0;
             weights_[i][j] = w;
         }
     }
@@ -114,6 +116,13 @@ void FullyConnectedLayer::UpdateLazySubtrahend(
             w.count++;
         }
     }
+
+    assert(biases_.size() == num_output_);
+    for (int i=0; i<num_output_; i++) {
+        Weight &w = biases_[i];
+        w.lazy_sub += learning_rate_ * next_delta[i];
+        w.count++;
+    }
 }
 
 void FullyConnectedLayer::ApplyLazySubtrahend() {
@@ -128,5 +137,15 @@ void FullyConnectedLayer::ApplyLazySubtrahend() {
             w.lazy_sub = 0.0;
             w.count = 0;
         }
+    }
+
+    assert(biases_.size() == num_output_);
+    for (int i=0; i<num_output_; i++) {
+        Weight &w = biases_[i];
+
+        assert(w.count > 0);
+        w.val -= w.lazy_sub / w.count;
+        w.lazy_sub = 0.0;
+        w.count = 0;
     }
 }
