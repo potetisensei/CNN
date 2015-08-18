@@ -16,7 +16,7 @@ public:
     virtual void CheckInputUnits(vector<struct Neuron> const &units) { assert(0); } 
     virtual void ArrangeOutputUnits(vector<struct Neuron> &units) { assert(0); }
     virtual void ConnectNeurons(vector<struct Neuron> const &input, vector<struct Neuron> const &output) { assert(0); }
-    virtual void CalculateOutputUnits(vector<struct Neuron> &output);
+    virtual void CalculateOutputUnits(vector<struct Neuron> &units);
     virtual void Propagate(vector<struct Neuron> const &input, vector<struct Neuron> const &output) { assert(0); }
     virtual void BackPropagate(vector<struct Neuron> const &input, vector<struct Neuron> const &output) { assert(0); }
     virtual void UpdateWeights() { assert(0); }
