@@ -13,20 +13,20 @@ public:
     Layer(double rate, ActivationFunction *f) 
         : calculated_(false), learning_rate_(rate), f_(f) {}
     virtual ~Layer() {}
-    virtual void ConnectLayer(Layer *layer) { assert(0); }
-    virtual void CalculateOutput(Layer *layer);
-    virtual void Propagate(Layer *layer) { assert(0); }
-    virtual void BackPropagate(DoubleVector2d next_deltas, ActivationFunction *f) { assert(0); }
-    virtual void UpdateWeight(DoubleVector2d deltas) { assert(0); }
-    virtual void UpdateBias(DoubleVector2d deltas) { assert(0); }
-
+    virtual void CheckInputUnits(vector<struct Neuron> const &units) { assert(0); } 
+    virtual void ArrangeOutputUnits(vector<struct Neuron> &units) { assert(0); }
+    virtual void ConnectNeurons(vector<struct Neuron> const &input, vector<struct Neuron> const &output) { assert(0); }
+    virtual void CalculateOutputUnits(vector<struct Neuron> &output);
+    virtual void Propagate(vector<struct Neuron> const &input, vector<struct Neuron> const &output) { assert(0); }
+    virtual void BackPropagate(vector<struct Neuron> const &input, vector<struct Neuron> const &output) { assert(0); }
+    virtual void UpdateWeights() { assert(0); }
+/*
     bool calculated_;
-    vector<struct Neuron> neurons_; // think as 1d even if Layer has 2d or 3d neurons
     DoubleVector2d deltas_; // [sample_idx][neuron_idx] 
     ActivationFunction *f_;
 public:
     double learning_rate_;
-    Identity id_;
+    Identity id_;*/
 };
 
 #endif

@@ -22,6 +22,7 @@ public:
 private:
     bool layer_connected_;
     vector<Layer*> layers_;
+    NeuronVector2d all_neurons_;
 };
 
 #endif
