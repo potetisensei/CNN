@@ -255,39 +255,46 @@ int rev( int x ){
 }
 
 
-double img[60000][28*28+1];
-int label[60000];
+double limg[60000][28*28+1];
+int llabel[60000];
+double timg[60000][28*28+1];
+int tlabel[60000];
+
 
 void TestMNIST(){
 
   int magic_number;
-  int N, H, W;
+  int N, Nt, Nl, H, W;
   
   vector<double> in, out;
   DoubleVector2d ins, outs;
 
-  int namonakiacc = 0;  
+  int namonakiacc = 0;
 
   NeuralNet net;
   RectifiedLinear rel;
   LogisticSigmoid sigmoid;
   Softmax softmax;
+  Identity id;
 
-  /*
-  ConvLayer *conv1 = new ConvLayer(28, 1, 2, 5, 8, &sigmoid, 0.00005);
-  PoolLayer *pool1 = new PoolLayer(14, 8, 2, 3);
-  FullyConnectedLayer *full1 = new FullyConnectedLayer(7*7*8, &softmax, 0.00005);
-  FullyConnectedLayer *full2 = new FullyConnectedLayer(10, &sigmoid, 0.00005);
-  
+  ConvLayer *conv1 = new ConvLayer(28, 1, 1, 5, 8, &rel, 0.01);
+  PoolLayer *pool1 = new PoolLayer(28, 8, 2, 2);
+  ConvLayer *conv2 = new ConvLayer(14, 8, 1, 5, 16, &rel, 0.01);
+  PoolLayer *pool2 = new PoolLayer(14, 16, 3, 3);
+  FullyConnectedLayer *full1 = new FullyConnectedLayer(5*5*16, &softmax, 0.01);
+  FullyConnectedLayer *full2 = new FullyConnectedLayer(10, &sigmoid, 0.01);
 
   srand(time(NULL));
   net.AppendLayer(conv1);
   net.AppendLayer(pool1);
+  net.AppendLayer(conv2);
+  net.AppendLayer(pool2);
   net.AppendLayer(full1);
   net.AppendLayer(full2);  
   net.ConnectLayers();
-  */
 
+
+  /*
   FullyConnectedLayer *full1 = new FullyConnectedLayer(28*28, &sigmoid, 0.1);
   FullyConnectedLayer *full2 = new FullyConnectedLayer(32, &sigmoid, 0.1);  
   FullyConnectedLayer *full3 = new FullyConnectedLayer(10, &sigmoid, 0.1);
@@ -297,6 +304,7 @@ void TestMNIST(){
   net.AppendLayer(full2);
   net.AppendLayer(full3);    
   net.ConnectLayers();  
+  */
 
   FILE *fp;
 
@@ -307,6 +315,7 @@ void TestMNIST(){
 
   fread( &N , sizeof( N ) , 1 , fp );
   N = rev(N);
+  Nl = N;
 
   fread( &H , sizeof( H ) , 1 , fp );
   H = rev(H);
@@ -321,7 +330,7 @@ void TestMNIST(){
       for( int j = 0; j < W; j++ ){
 	unsigned char tmp;
 	fread( &tmp , sizeof( tmp ) , 1 , fp );
-	img[k][i*W+j] = (double)tmp / 256.0;
+	limg[k][i*W+j] = (double)tmp / 256.0;
       }
     }
   }
@@ -339,33 +348,10 @@ void TestMNIST(){
   for( int k = 0; k < N; k++ ){
     unsigned char tmp;
     fread( &tmp , sizeof( tmp ) , 1 , fp );
-    label[k] = int(tmp);
+    llabel[k] = int(tmp);
   }
 
   fclose( fp );
-
-  
-  for( int loop = 0; loop < N; loop++ ){
-    if( loop % 100 == 0 ) cout << loop << " / " << N << endl;
-    in.clear();
-    out = vector<double>(10,0.0);
-
-    for( int i = 0; i < H; i++ )
-      for( int j = 0; j < W; j++ )
-	in.push_back( img[loop][i*W+j] );
-
-    out[ label[loop] ] = 1.0;
-
-
-    ins.clear();
-    ins.push_back( in );
-    outs.clear();
-    outs.push_back( out );
-    
-    net.TrainNetwork(ins, outs);
-  }
-
-
 
   fp = fopen( "t10k-images-idx3-ubyte" , "rb" );
   
@@ -374,6 +360,7 @@ void TestMNIST(){
 
   fread( &N , sizeof( N ) , 1 , fp );
   N = rev(N);
+  Nt = N;
 
   fread( &H , sizeof( H ) , 1 , fp );
   H = rev(H);
@@ -383,12 +370,11 @@ void TestMNIST(){
 
 
   for( int k = 0; k < N; k++ ){
-    img[k][0] = 1.0;
     for( int i = 0; i < H; i++ ){
       for( int j = 0; j < W; j++ ){
 	unsigned char tmp;
 	fread( &tmp , sizeof( tmp ) , 1 , fp );
-	img[k][i*W+j] = (double)tmp / 256.0;
+	timg[k][i*W+j] = (double)tmp / 256.0;
       }
     }
   }
@@ -406,20 +392,66 @@ void TestMNIST(){
   for( int k = 0; k < N; k++ ){
     unsigned char tmp;
     fread( &tmp , sizeof( tmp ) , 1 , fp );
-    label[k] = int(tmp);
+    tlabel[k] = int(tmp);
   }
 
   fclose( fp );
+  
+
+  int lloop = 0;
+  int tloop = 0;
+  int loop_n = 50;
+
+  for( int loop = 1; loop < loop_n; loop++ ){
+    cout << loop << " / " << loop_n << endl;
+    for( ; lloop < 100*loop; lloop++ ){
+      in.clear();
+      out = vector<double>(10,0.0);
+
+      for( int i = 0; i < H; i++ )
+	for( int j = 0; j < W; j++ )
+	  in.push_back( limg[lloop%Nl][i*W+j] );
+
+      out[ llabel[lloop%Nl] ] = 1.0;
+
+      ins.clear();
+      ins.push_back( in );
+      outs.clear();
+      outs.push_back( out );
+
+      net.TrainNetwork(ins, outs);
+    }
 
 
-  for( int loop = 0; loop < N; loop++ ){
-    if( loop % 100 == 0 ) cout << loop << " / " << N << endl;
+    namonakiacc = 0;
+    for( ; tloop < 100*loop; tloop++ ){
+      in.clear();
+      out = vector<double>(10,0.0);
+
+      for( int i = 0; i < H; i++ )
+	for( int j = 0; j < W; j++ )
+	  in.push_back( timg[tloop%Nt][i*W+j] );
+
+      net.PropagateLayers( in , out );
+
+      int res = 0;
+      for( int i = 1; i < 10; i++ )
+	if( out[res] < out[i] ) res = i;
+
+      if( res == tlabel[tloop%Nt] ) namonakiacc++;
+    }
+
+    cout << "ac : " << namonakiacc << " / " << 100 << endl;
+  }
+
+  namonakiacc = 0;
+  for( tloop = 0; tloop < Nt; tloop++ ){
     in.clear();
     out = vector<double>(10,0.0);
 
     for( int i = 0; i < H; i++ )
       for( int j = 0; j < W; j++ )
-	in.push_back( img[loop][i*W+j] );
+	in.push_back( timg[tloop%Nt][i*W+j] );
 
     net.PropagateLayers( in , out );
 
@@ -427,10 +459,11 @@ void TestMNIST(){
     for( int i = 1; i < 10; i++ )
       if( out[res] < out[i] ) res = i;
 
-    if( res == label[loop] ) namonakiacc++;
+    if( res == tlabel[tloop%Nt] ) namonakiacc++;
   }
 
-  cout << namonakiacc << " / " << N << endl;
+  cout << "ac : " << namonakiacc << " / " << Nt << endl;
+  
 }
 
 

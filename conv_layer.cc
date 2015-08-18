@@ -125,12 +125,12 @@ void ConvLayer::BackPropagate(DoubleVector2d next_deltas, ActivationFunction *f)
                   my_delta[neuron_idx2] += 
                     next_delta[neuron_idx1] * 
                     edges_weight_[m][k][p][q] * 
-                    f_->CalculateDerivative(neurons_[neuron_idx2].u);
+                    f->CalculateDerivative(neurons_[neuron_idx2].u);
       	        }
-  	          }
-  	        }
-  	      }
-  	    }
+	      }
+	    }
+	  }
+	}
       }
     }
   }
@@ -140,7 +140,7 @@ void ConvLayer::UpdateWeight(DoubleVector2d deltas) {
   int size = breadth_output_ * breadth_output_;
   int size2 = breadth_neuron_ * breadth_neuron_;
 
-    assert(num_channels_ * size2 == neurons_.size());
+  assert(num_channels_ * size2 == neurons_.size());
 
   for (int l=0; l<deltas.size(); l++) {
     for (int m=0; m<num_filters_; m++) {
@@ -151,24 +151,46 @@ void ConvLayer::UpdateWeight(DoubleVector2d deltas) {
           assert(i*stride_ < breadth_neuron_);
           assert(j*stride_ < breadth_neuron_);
     
-	      for (int k=0; k<num_channels_; k++) {
-	        for (int p=0; p<breadth_filter_; p++) {
-	          for (int q=0; q<breadth_filter_; q++) {
+	  for (int k=0; k<num_channels_; k++) {
+	    for (int p=0; p<breadth_filter_; p++) {
+	      for (int q=0; q<breadth_filter_; q++) {
                 int x = j*stride_ + q;
-        	    int y = i*stride_ + p;
-		        int neuron_idx2 = k*size2 + y*breadth_neuron_ + x;
+		int y = i*stride_ + p;
+		int neuron_idx2 = k*size2 + y*breadth_neuron_ + x;
 
-	            if (x < breadth_neuron_ && y < breadth_neuron_) {
-	           	  edges_weight_[m][k][p][q] -= 
-                  learning_rate_ * 
-                  deltas[l][neuron_idx1] * 
-                  neurons_[neuron_idx2].z / deltas.size();
+		if (x < breadth_neuron_ && y < breadth_neuron_) {
+		  edges_weight_[m][k][p][q] -= 
+		    learning_rate_ * 
+		    deltas[l][neuron_idx1] * 
+		    neurons_[neuron_idx2].z / deltas.size();
                 }
-	          }
-	        }
 	      }
 	    }
+	  }
+	}
       }
     }
   }
+
+
+  // weight limit
+  double weightlimit = 10.0;
+  double wsum = 0.0;
+  for (int m=0; m<num_filters_; m++)
+    for (int k=0; k<num_channels_; k++)
+      for (int p=0; p<breadth_filter_; p++)
+	for (int q=0; q<breadth_filter_; q++)
+	  wsum += edges_weight_[m][k][p][q];
+
+  if( wsum > weightlimit ){
+  for (int m=0; m<num_filters_; m++)
+    for (int k=0; k<num_channels_; k++)
+      for (int p=0; p<breadth_filter_; p++)
+	for (int q=0; q<breadth_filter_; q++)
+	  edges_weight_[m][k][p][q] *= 10.0 / wsum;
+  }
+  
+}
+
+void ConvLayer::UpdateBias(DoubleVector2d deltas) {
 }
