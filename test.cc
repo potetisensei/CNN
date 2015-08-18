@@ -23,17 +23,17 @@ void TestFullyConnectedLayer() {
     vector<double> output;
 
     srand(time(NULL));
-    net.AppendLayer(new FullyConnectedLayer(3, &tanh, 0.0005));
-    net.AppendLayer(new FullyConnectedLayer(2, &tanh, 0.0005));
-    net.AppendLayer(new FullyConnectedLayer(3, &softmax, 0.0005));
+    net.SetInputSize(3);
+    net.AppendLayer(new FullyConnectedLayer(3, 2, &tanh, 0.0005));
+    net.AppendLayer(new FullyConnectedLayer(2, 3, &tanh, 0.0005));
     net.ConnectLayers();
 
     for (int j=0; j<10000; j++) {
         DoubleVector2d inputs;
         DoubleVector2d outputs;
 
-        inputs.resize(1);
-        outputs.resize(1);
+        inputs.resize(2);
+        outputs.resize(2);
         input.resize(3, 0);
         output.resize(3);
         for (int i=0; i<3; i++) {
@@ -42,7 +42,9 @@ void TestFullyConnectedLayer() {
             input[i] = 1.0;
             output[i] = 1.0;
             inputs[0] = input;
+            inputs[1] = input;
             outputs[0] = output;
+            outputs[1] = output;
             net.TrainNetwork(inputs, outputs);
             printf("%d: \n", j);
             printf("input: ");
@@ -63,7 +65,7 @@ void TestFullyConnectedLayer() {
         }
     }
 }
-
+/*
 void TestConvLayer() {
     BitMapProcessor bmp;
     NeuralNet net;
@@ -182,7 +184,7 @@ void TestDeepLearning(){
   PoolLayer *pool2 = new PoolLayer(32, 20, 2, 2);
   ConvLayer *conv3 = new ConvLayer(16, 20, 1, 5, 20, &sigmoid, rate);
   PoolLayer *pool3 = new PoolLayer(16, 20, 2, 2);
-  FullyConnectedLayer *full1 = new FullyConnectedLayer(8*8*20, &softmax/*sigmoid*/, rate);
+  FullyConnectedLayer *full1 = new FullyConnectedLayer(8*8*20, &softmax, rate);
   FullyConnectedLayer *full2 = new FullyConnectedLayer(2, &sigmoid, rate);
   
 
@@ -209,12 +211,17 @@ void TestDeepLearning(){
         in.clear();
         out.clear();
       
-        if( /*mt()*/loop % 2 == 0 ){
+        if( //mt()
+            loop % 2 == 0 ){
           out.push_back( 1.0 ); out.push_back( 0.0 );
-          sprintf( filename , "processed/cat.%d.jpg" , loop/2/*mt()%MAX_FILE*/ );
+          sprintf( filename , "processed/cat.%d.jpg" , loop/2
+          //mt()%MAX_FILE
+          );
         } else {
           out.push_back( 0.0 ); out.push_back( 1.0 );
-          sprintf( filename , "processed/dog.%d.jpg" , loop/2/*mt()%MAX_FILE*/ );
+          sprintf( filename , "processed/dog.%d.jpg" , loop/2
+          //mt()%MAX_FILE
+           );
         }
       
         pixels = stbi_load( filename , &width , &height , &bpp , 0 );
@@ -236,12 +243,12 @@ void TestDeepLearning(){
     
         cout << filename << endl;
         cout << "o: " << out2[0] << " " << out2[1] << endl;
-        /*if (out2[0] > 0.3) {
-            conv1->learning_rate_ = 0.000005;
-            conv1->learning_rate_ = 0.000005;
-            full1->learning_rate_ = 0.000005;
-            full2->learning_rate_ = 0.000005;
-        }*/
+        //if (out2[0] > 0.3) {
+        //    conv1->learning_rate_ = 0.000005;
+        //    conv1->learning_rate_ = 0.000005;
+        //    full1->learning_rate_ = 0.000005;
+        //    full2->learning_rate_ = 0.000005;
+        //}
             
         cout << endl;
       }
@@ -278,20 +285,20 @@ void TestMNIST(){
   LogisticSigmoid sigmoid;
   Softmax softmax;
 
-  /*
-  ConvLayer *conv1 = new ConvLayer(28, 1, 2, 5, 8, &sigmoid, 0.00005);
-  PoolLayer *pool1 = new PoolLayer(14, 8, 2, 3);
-  FullyConnectedLayer *full1 = new FullyConnectedLayer(7*7*8, &softmax, 0.00005);
-  FullyConnectedLayer *full2 = new FullyConnectedLayer(10, &sigmoid, 0.00005);
   
+  //ConvLayer *conv1 = new ConvLayer(28, 1, 2, 5, 8, &sigmoid, 0.00005);
+  //PoolLayer *pool1 = new PoolLayer(14, 8, 2, 3);
+  //FullyConnectedLayer *full1 = new FullyConnectedLayer(7*7*8, &softmax, 0.00005);
+  //FullyConnectedLayer *full2 = new FullyConnectedLayer(10, &sigmoid, 0.00005);
+  //
 
-  srand(time(NULL));
-  net.AppendLayer(conv1);
-  net.AppendLayer(pool1);
-  net.AppendLayer(full1);
-  net.AppendLayer(full2);  
-  net.ConnectLayers();
-  */
+  //srand(time(NULL));
+  //net.AppendLayer(conv1);
+  //net.AppendLayer(pool1);
+  //net.AppendLayer(full1);
+  //net.AppendLayer(full2);  
+  //net.ConnectLayers();
+  
 
   FullyConnectedLayer *full1 = new FullyConnectedLayer(28*28, &sigmoid, 0.1);
   FullyConnectedLayer *full2 = new FullyConnectedLayer(32, &sigmoid, 0.1);  
@@ -437,12 +444,12 @@ void TestMNIST(){
 
   cout << namonakiacc << " / " << N << endl;
 }
-
+*/
 
 
 int main(){
-  //TestFullyConnectedLayer();
+  TestFullyConnectedLayer();
   //TestPoolLayer();
-  TestDeepLearning();
+  //TestDeepLearning();
   //TestMNIST();
 }
