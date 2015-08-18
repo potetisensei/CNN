@@ -10,18 +10,17 @@ using namespace std;
 
 class NeuralNet {
 public:
-    NeuralNet() : connected_(false)  {}
+    NeuralNet() : layer_connected_(false)  {}
     ~NeuralNet() {}
 
-    void GetOutput(vector<double> &output);
     void AppendLayer(Layer *layer);
     void ConnectLayers();
     void PropagateLayers(vector<double> &input, vector<double> &output);
-    void BackPropagateLayers(DoubleVector2d &dataset, DoubleVector2d &outputs);
+    void BackPropagateLayers(vector<double> &input, vector<double> &output);
     void TrainNetwork(DoubleVector2d &inputs, DoubleVector2d &expected_outputs);
 
 private:
-    bool connected_;
+    bool layer_connected_;
     vector<Layer*> layers_;
 };
 

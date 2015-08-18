@@ -162,7 +162,7 @@ void TestDeepLearning(){
   mt19937 mt( time( NULL ) );
   int MAX_FILE = 12499;
   char filename[256];
-  int LOOP_N = 100;//25000-2;//1000;
+  int LOOP_N = 300;//25000-2;//1000;
   int namonakiacc = 0;
   vector<double> in, out;
   DoubleVector2d ins, outs;
@@ -174,13 +174,16 @@ void TestDeepLearning(){
   RectifiedLinear rel;
   LogisticSigmoid sigmoid;
   Softmax softmax;
+  double rate = 0.00001;
   
-  ConvLayer *conv1 = new ConvLayer(64, 3, 2, 5, 8, &sigmoid, 0.00005);
-  PoolLayer *pool1 = new PoolLayer(32, 8, 2, 3);
-  ConvLayer *conv2 = new ConvLayer(16, 8, 2, 5, 16, &sigmoid, 0.00005);
-  PoolLayer *pool2 = new PoolLayer(8, 16, 4, 3);
-  FullyConnectedLayer *full1 = new FullyConnectedLayer(2*2*16, &softmax, 0.00005);
-  FullyConnectedLayer *full2 = new FullyConnectedLayer(2, &sigmoid, 0.00005);
+  ConvLayer *conv1 = new ConvLayer(64, 3, 1, 5, 16, &sigmoid, rate);
+  PoolLayer *pool1 = new PoolLayer(64, 16, 2, 2);
+  ConvLayer *conv2 = new ConvLayer(32, 32, 1, 5, 20, &sigmoid, rate);
+  PoolLayer *pool2 = new PoolLayer(32, 20, 2, 2);
+  ConvLayer *conv3 = new ConvLayer(16, 20, 1, 5, 20, &sigmoid, rate);
+  PoolLayer *pool3 = new PoolLayer(16, 20, 2, 2);
+  FullyConnectedLayer *full1 = new FullyConnectedLayer(8*8*20, &softmax/*sigmoid*/, rate);
+  FullyConnectedLayer *full2 = new FullyConnectedLayer(2, &sigmoid, rate);
   
 
   srand(time(NULL));
@@ -188,6 +191,8 @@ void TestDeepLearning(){
   net.AppendLayer(pool1);
   net.AppendLayer(conv2);
   net.AppendLayer(pool2);
+  net.AppendLayer(conv3);
+  net.AppendLayer(pool3);
   net.AppendLayer(full1);
   net.AppendLayer(full2);  
   net.ConnectLayers();
@@ -438,6 +443,6 @@ void TestMNIST(){
 int main(){
   //TestFullyConnectedLayer();
   //TestPoolLayer();
-  //TestDeepLearning();
-  TestMNIST();
+  TestDeepLearning();
+  //TestMNIST();
 }
