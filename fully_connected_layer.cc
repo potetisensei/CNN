@@ -1,87 +1,132 @@
 #include "fully_connected_layer.h"
 
-FullyConnectedLayer::FullyConnectedLayer(int num_neurons, ActivationFunction *f, double learning_rate) 
-        : Layer(learning_rate, f) {
-    neurons_.resize(num_neurons);
-    edges_.resize(num_neurons);
+FullyConnectedLayer::FullyConnectedLayer(int num_input, int num_output, ActivationFunction *f, double learning_rate) 
+        : neuron_connected_(false),
+          num_input_(num_input),
+          num_output_(num_output),
+          f_(f),
+          learning_rate_(learning_rate) {}
+
+void CheckInputUnits(vector<struct Neuron> const &units) {
+    assert(units.size() == num_input_);
 }
 
-void FullyConnectedLayer::ConnectLayer(Layer *layer) {
-    int num_output_neurons = layer->neurons_.size();
+void ArrangeOutputUnits(vector<struct Neuron> &units) {
+    units.resize(num_output_);
+}
+
+void FullyConnectedLayer::ConnectNeurons(
+        vector<struct Neuron> const &input, 
+        vector<struct Neuron> const &output) {
+    assert(!neuron_connected_);
+    assert(input.size() == num_input_);
+    assert(output.size() == num_output_);
     
-    for (int i=0; i<num_output_neurons; i++) {
-        biases_.push_back(GenRandom(-0.5, 0.5));
+    biases_.resize(num_output_);
+    for (int i=0; i<num_output_; i++) {
+        struct Weight w;
+
+        w.val = GenRandom(-0.5, 0.5)
+        w.delta = 0.0;
+        biases_[i] = w;
     }
 
-    for (int i=0; i<neurons_.size(); i++) {
-        edges_[i].resize(num_output_neurons);
-        for (int j=0; j<num_output_neurons; j++) {
-            edges_[i][j].to = j;
-            edges_[i][j].w = GenRandom(-1.0, 1.0);
-        }
-    }
-}
+    weights_.resize(num_input_);
+    for (int i=0; i<num_input_; i++) {
+        weights_[i].resize(num_output_);
+        for (int j=0; j<num_output_; j++) {
+            struct Weight w;
 
-void FullyConnectedLayer::Propagate(Layer *layer) {
-    assert(calculated_);
-
-    for (int i=0; i<layer->neurons_.size(); i++) {
-        layer->neurons_[i].u = 0.0;
-    }
-
-    for (int i=0; i<neurons_.size(); i++) {
-        for (int j=0; j<edges_[i].size(); j++) {
-            struct Edge e = edges_[i][j];
-            layer->neurons_[e.to].u += e.w * neurons_[i].z;
+            w.val = GenRandom(-1.0, 1.0);
+            w.delta = 0.0;
+            weights_[i][j] = w;
         }
     }
 
-    assert(biases_.size() == layer->neurons_.size());
-    for (int i=0; i<biases_.size(); i++) {
-        layer->neurons_[i].u += biases_[i];
-    }
-
-    layer->calculated_ = false;
+    neuron_connected_ = true;
 }
 
-void FullyConnectedLayer::BackPropagate(DoubleVector2d next_deltas, ActivationFunction *f) {
-    deltas_.resize(next_deltas.size());
-    for (int i=0; i<deltas_.size(); i++) {
-        vector<double> &next_delta = next_deltas[i];
-        vector<double> &delta = deltas_[i];
-        
-        delta.resize(neurons_.size());
-        fill(delta.begin(), delta.end(), 0.0);
+void FullyConnectedLayer::CalculateOutputUnits(vector<struct Neuron> &units) {
+    assert(units.size() == num_output_);
 
-        for (int j=0; j<edges_.size(); j++) {
-            for (int i=0; i<edges_[j].size(); i++) {
-                int k = edges_[j][i].to;
-                double w = edges_[j][i].w;
-
-                delta[j] += next_delta[k] * w * f->CalculateDerivative(neurons_[j].u);
-            }
-        }
+    for (int i=0; i<num_output_; i++) {
+        units[i].z = f_(units[i].u);
     }
 }
 
-void FullyConnectedLayer::UpdateWeight(DoubleVector2d deltas) {
-    for (int l=0; l<deltas.size(); l++) {
-        assert(neurons_.size() == edges_.size());
-        for (int i=0; i<edges_.size(); i++) {
-            for (int k=0; k<edges_[i].size(); k++) {
-                int j = edges_[i][k].to;
+void FullyConnectedLayer::Propagate(
+        vector<struct Neuron> const &input, 
+        vector<struct Neuron> &output) {
+    assert(input.size() == num_input_);
+    assert(output.size() == num_output_);
     
-                edges_[i][k].w -= learning_rate_ * deltas[l][j] * neurons_[i].z / deltas.size(); // Wji -= e * delta[j] * z[i] / N
-            }
+    for (int i=0; i<num_output_; i++) {
+        output[i].u = 0.0;
+    }
+
+    for (int i=0; i<num_input_; i++) {
+        for (int j=0; j<num_output_; j++) {
+            struct Weight w = weights_[i][j];
+            output[j].u += w.val * input[i].z;
+        }
+    }
+
+    assert(biases_.size() == num_output_);
+    for (int i=0; i<num_output_; i++) {
+        output[i].u += biases_[i];
+    }
+}
+
+void FullyConnectedLayer::BackPropagate(
+        vector<struct Neuron> const &input,
+        vector<double> const &next_delta,
+        vector<double> &delta) {
+    assert(input.size() == num_input_);
+    assert(delta.size() == num_input_);
+    assert(next_delta.size() == num_output_);
+
+    assert(weights_.size() == num_input_);
+    for (int i=0; i<num_input_; i++) {
+        delta[i] = 0.0;
+
+        assert(weights_[i].size() == num_output_);
+        for (int j=0; j<num_output_; j++) {
+            double w = weights_[i][j].val;
+
+            delta[i] += 
+                next_delta[j] * w * f_->CalculateDerivative(input[i].u);
         }
     }
 }
 
-void FullyConnectedLayer::UpdateBias(DoubleVector2d deltas) {
-    for (int l=0; l<deltas.size(); l++) {
-        assert(deltas[l].size() == biases_.size());
-        for (int i=0; i<deltas[l].size(); i++) {
-            biases_[i] -= learning_rate_ * deltas[l][i] / deltas.size(); // bi -= e * delta[i] / N
+void FullyConnectedLayer::UpdateLazySubtrahend(
+        vector<struct Neuron> const &input,
+        vector<double> const &next_delta) {
+    assert(input.size() == num_input_);
+    assert(next_delta.size() == num_output_);
+
+    assert(weights_.size() == num_input_);
+    for (int i=0; i<num_input_; i++) {
+        assert(weights_[i].size() == num_output_);
+        for (int j=0; j<num_output_; j++) {
+            Weight &w = weights_[i][j];
+            w.lazy_sub += learning_rate_ * next_delta[j] * input[i].z;
+            w.count++;
+        }
+    }
+}
+
+void FullyConnectedLayer::ApplyLazySubtrahend() {
+    assert(weights_.size() == num_input_);
+    for (int i=0; i<num_input_; i++) {
+        assert(weights_[i].size() == num_output_);
+        for (int j=0; j<num_output_; j++) {
+            Weight &w = weights_[i][j];
+
+            assert(w.count > 0);
+            w.val -= w.lazy_sub / w.count;
+            w.lazy_sub = 0.0;
+            w.count = 0;
         }
     }
 }

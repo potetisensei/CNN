@@ -14,12 +14,13 @@ struct Neuron {
     double z;
 };
 
-struct Edge {
-    int to;
-    double w;
+struct Weight {
+    double val; // weight
+    double lazy_sub; // sum of dEn/dWij in a mini-batch datasets
+    int count; // number of mini-batch dataset
 };
 
-typedef vector<vector<struct Edge> > EdgeVector2d;
+typedef vector<vector<struct Weight> > WeightVector2d;
 
 inline double GenRandom(double fmin, double fmax) {
     double f = (double)rand() / RAND_MAX;
