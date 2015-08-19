@@ -27,8 +27,10 @@ void TestFullyConnectedLayer() {
     srand(time(NULL));
     net.SetInputSize(4);
     net.AppendLayer(new ConvLayer(2, 1, 1, 2, 4, &sigmoid, 0.01));
-    net.AppendLayer(new PoolLayer(2, 4, 1, 1, &id));    
-    net.AppendLayer(new FullyConnectedLayer(2*2*4, 4, &softmax, 0.01));
+    net.AppendLayer(new PoolLayer(2, 4, 1, 1, &id));
+    net.AppendLayer(new ConvLayer(2, 4, 1, 2, 16, &sigmoid, 0.01));
+    net.AppendLayer(new PoolLayer(2, 16, 2, 2, &id));    
+    net.AppendLayer(new FullyConnectedLayer(16, 4, &softmax, 0.01));
     net.ConnectLayers();
 
     
@@ -294,7 +296,15 @@ void TestMNIST(){
   Softmax softmax;
   Identity id;
 
+  srand(time(NULL));
+  net.SetInputSize(28*28);
+  net.AppendLayer(new ConvLayer(28, 1, 1, 5, 8, &sigmoid, 0.01));
+  net.AppendLayer(new PoolLayer(28, 8, 2, 2, &id));
+  net.AppendLayer(new FullyConnectedLayer(14*14*8, 10, &softmax, 0.01));
+  net.ConnectLayers();
 
+  
+  /*
   srand(time(NULL));
   net.SetInputSize(28*28);
   net.AppendLayer(new ConvLayer(28, 1, 1, 5, 8, &sigmoid, 0.01));
@@ -303,6 +313,7 @@ void TestMNIST(){
   net.AppendLayer(new PoolLayer(14, 16, 3, 3, &id));    
   net.AppendLayer(new FullyConnectedLayer(5*5*16, 10, &softmax, 0.01));
   net.ConnectLayers();
+  */
 
   /*
   FullyConnectedLayer *full1 = new FullyConnectedLayer(28*28, &sigmoid, 0.1);
@@ -410,7 +421,7 @@ void TestMNIST(){
 
   int lloop = 0;
   int tloop = 0;
-  int loop_n = 100;
+  int loop_n = 1000;
 
   for( int loop = 1; loop < loop_n; loop++ ){
     cout << loop << " / " << loop_n << endl;
@@ -451,11 +462,11 @@ void TestMNIST(){
       if( res == tlabel[tloop%Nt] ) namonakiacc++;
     }
 
-    cout << "ac : " << namonakiacc << " / " << 100 << endl;
+    cerr << "ac : " << namonakiacc << " / " << 100 << endl;
 
     if( loop == loop_n-1 ){
       int addc = 0;
-      printf( "addc : " );
+      cerr << "addc : ";
       scanf( "%d" , &addc );
       loop_n += addc;
     }
