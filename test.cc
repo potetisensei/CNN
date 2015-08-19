@@ -18,25 +18,29 @@ using namespace std;
 void TestFullyConnectedLayer() {
     NeuralNet net;
     TangentSigmoid tanh;
+    LogisticSigmoid sigmoid;    
     Softmax softmax;
+    Identity id;    
     vector<double> input;
     vector<double> output;
 
     srand(time(NULL));
-    net.SetInputSize(3);
-    net.AppendLayer(new FullyConnectedLayer(3, 2, &tanh, 0.0005));
-    net.AppendLayer(new FullyConnectedLayer(2, 3, &tanh, 0.0005));
+    net.SetInputSize(4);
+    net.AppendLayer(new ConvLayer(2, 1, 1, 2, 4, &sigmoid, 0.01));
+    net.AppendLayer(new PoolLayer(2, 4, 1, 1, &id));    
+    net.AppendLayer(new FullyConnectedLayer(2*2*4, 4, &softmax, 0.01));
     net.ConnectLayers();
 
+    
     for (int j=0; j<10000; j++) {
         DoubleVector2d inputs;
         DoubleVector2d outputs;
 
         inputs.resize(2);
         outputs.resize(2);
-        input.resize(3, 0);
-        output.resize(3);
-        for (int i=0; i<3; i++) {
+        input.resize(4, 0);
+        output.resize(4);
+        for (int i=0; i<4; i++) {
             fill(input.begin(), input.end(), 0.0);
             fill(output.begin(), output.end(), 0.0);
             input[i] = 1.0;
@@ -48,17 +52,17 @@ void TestFullyConnectedLayer() {
             net.TrainNetwork(inputs, outputs);
             printf("%d: \n", j);
             printf("input: ");
-            for (int k=0; k<3; k++) {
+            for (int k=0; k<4; k++) {
                 printf("%f ", input[k]);
             }puts("");
             printf("expect: ");
-            for (int k=0; k<3; k++) {
+            for (int k=0; k<4; k++) {
                 printf("%f ", output[k]);
             }
             puts("");
             net.PropagateLayers(input, output);
             printf("output: ");
-            for (int k=0; k<3; k++) {
+            for (int k=0; k<4; k++) {
                 printf("%f ", output[k]);
             }
             puts("");

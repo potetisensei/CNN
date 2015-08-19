@@ -82,9 +82,17 @@ void ConvLayer::ConnectNeurons(
 void ConvLayer::CalculateOutputUnits(vector<struct Neuron> &units) {
   assert(units.size() == num_output_);
 
+  double outputmax = -1000;
+  double outputmin = 1000;
+  
   for (int i=0; i<num_output_; i++) {
     units[i].z = f_->Calculate(units[i].u, units);
+
+    outputmax = max( outputmax , units[i].z );
+    outputmin = min( outputmin , units[i].z );    
   }
+
+  //printf( "convsig : %lf %lf\n" , outputmax , outputmin );
 }
 
 
@@ -104,6 +112,9 @@ void ConvLayer::Propagate(
     output[i].u = 0.0; 
   }
 
+  double outputmax = -1000;
+  double outputmin = 1000;
+  
   assert(biases_.size() == num_filters_);
   assert(weights_.size() == num_filters_);
   for (int m=0; m<num_filters_; m++) { 
@@ -138,9 +149,14 @@ void ConvLayer::Propagate(
 
         assert(output_idx < output.size());
         output[output_idx].u = sum_conv + biases_[m].val;
+
+	outputmax = max( outputmax, output[output_idx].u );
+	outputmin = min( outputmin, output[output_idx].u );		
       }
     }
   }
+
+  //printf( "conv : %lf %lf\n" , outputmax , outputmin );
 }
  
 void ConvLayer::BackPropagate(
@@ -151,6 +167,8 @@ void ConvLayer::BackPropagate(
   int area_output = breadth_output_ * breadth_output_;
   int area_input = breadth_neuron_ * breadth_neuron_;
 
+  assert(0);
+  
   assert(input.size() == num_input_);
   assert(next_delta.size() == num_output_);
   
@@ -194,8 +212,8 @@ void ConvLayer::BackPropagate(
 }
 
 void ConvLayer::UpdateLazySubtrahend(
-    vector<struct Neuron> const &input, 
-    const vector<double> &next_delta) {
+				     vector<struct Neuron> const &input, 
+				     const vector<double> &next_delta) {
   int area_output = breadth_output_ * breadth_output_;
   int area_input = breadth_neuron_ * breadth_neuron_;
   
@@ -206,22 +224,22 @@ void ConvLayer::UpdateLazySubtrahend(
   for (int m=0; m<num_filters_; m++) {
     assert(weights_[m].size() == num_channels_);
     for (int i=0; i<breadth_output_; i++) {
-  	  for (int j=0; j<breadth_output_; j++) {
+      for (int j=0; j<breadth_output_; j++) {
         int output_idx = m*area_output + i*breadth_output_ + j;
 
         assert(i*stride_ < breadth_neuron_);
         assert(j*stride_ < breadth_neuron_);
-	    for (int k=0; k<num_channels_; k++) {
+	for (int k=0; k<num_channels_; k++) {
           assert(weights_[m][k].size() == breadth_filter_);
-	      for (int p=0; p<breadth_filter_; p++) {
+	  for (int p=0; p<breadth_filter_; p++) {
             assert(weights_[m][k][p].size() == breadth_filter_);
-	        for (int q=0; q<breadth_filter_; q++) {
+	    for (int q=0; q<breadth_filter_; q++) {
               int x = j*stride_ + q;
               int y = i*stride_ + p;
-		      int input_idx = k*area_input + y*breadth_neuron_ + x;
+	      int input_idx = k*area_input + y*breadth_neuron_ + x;
 
-	          if (x < breadth_neuron_ && y < breadth_neuron_) {
-	         	  Weight &w = weights_[m][k][p][q];
+	      if (x < breadth_neuron_ && y < breadth_neuron_) {
+		Weight &w = weights_[m][k][p][q];
               
                 assert(output_idx < next_delta.size());
                 assert(input_idx < input.size());
@@ -241,7 +259,7 @@ void ConvLayer::UpdateLazySubtrahend(
   assert(biases_.size() == num_filters_);
   for (int m=0; m<num_filters_; m++) {
     for (int i=0; i<breadth_output_; i++) {
-  	  for (int j=0; j<breadth_output_; j++) {
+      for (int j=0; j<breadth_output_; j++) {
         int output_idx = m*area_output + i*breadth_output_ + j;
         struct Weight &w = biases_[m];
           
@@ -257,11 +275,11 @@ void ConvLayer::ApplyLazySubtrahend() {
   assert(weights_.size() == num_filters_);
   for (int m=0; m<num_filters_; m++) {
     assert(weights_[m].size() == num_channels_);
-	for (int k=0; k<num_channels_; k++) {
+    for (int k=0; k<num_channels_; k++) {
       assert(weights_[m][k].size() == breadth_filter_);
-	  for (int p=0; p<breadth_filter_; p++) {
+      for (int p=0; p<breadth_filter_; p++) {
         assert(weights_[m][k][p].size() == breadth_filter_);
-	    for (int q=0; q<breadth_filter_; q++) {
+	for (int q=0; q<breadth_filter_; q++) {
           struct Weight &w = weights_[m][k][p][q];
 
           assert(w.count > 0);
@@ -275,11 +293,11 @@ void ConvLayer::ApplyLazySubtrahend() {
 
   assert(biases_.size() == num_filters_);
   for (int m=0; m<num_filters_; m++) {
-      struct Weight &w = biases_[m];
+    struct Weight &w = biases_[m];
 
-      assert(w.count > 0);
-      w.val -= w.lazy_sub / w.count;
-      w.lazy_sub = 0.0;
-      w.count = 0;
+    assert(w.count > 0);
+    w.val -= w.lazy_sub / w.count;
+    w.lazy_sub = 0.0;
+    w.count = 0;
   }
 }
