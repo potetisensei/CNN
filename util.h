@@ -31,11 +31,8 @@ typedef vector<vector<struct Weight> > WeightVector2d;
 typedef vector<WeightVector2d> WeightVector3d;
 typedef vector<WeightVector3d> WeightVector4d;
 
-extern mt19937 mt;
-extern uniform_real_distribution<> urand;
 
 inline double GenRandom(double fmin, double fmax) {
-  //double f = urand(mt);
   double f = (double)rand() / RAND_MAX;
   return fmin + f * (fmax - fmin);
 }
