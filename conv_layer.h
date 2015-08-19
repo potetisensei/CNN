@@ -16,7 +16,8 @@ public:
         int breadth_filter, 
         int num_filters, 
         ActivationFunction *f, 
-        double learning_rate);
+        double learning_rate,
+	double momentum);
     virtual ~ConvLayer() {}
 
     virtual void CheckInputUnits(vector<struct Neuron> const &units);
@@ -39,6 +40,7 @@ private:
     int num_input_;
     int num_output_;
     double learning_rate_;
+    double momentum_;
     vector<struct Weight> biases_;
     WeightVector4d weights_; // [filter_idx][channel_idx][y][x], weight-sharing
 };

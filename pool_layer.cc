@@ -66,8 +66,6 @@ void PoolLayer::CalculateOutputUnits(vector<struct Neuron> &units) {
   }
 
   //printf( "poolsig : %lf %lf\n" , outputmax , outputmin );
-  
-  // do nothing
 }
 
 void PoolLayer::Propagate(

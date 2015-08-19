@@ -1,10 +1,11 @@
 #include "fully_connected_layer.h"
 
-FullyConnectedLayer::FullyConnectedLayer(int num_input, int num_output, ActivationFunction *f, double learning_rate) 
+FullyConnectedLayer::FullyConnectedLayer(int num_input, int num_output, ActivationFunction *f, double learning_rate, double momentum) 
         : neuron_connected_(false),
           num_input_(num_input),
           num_output_(num_output),
           learning_rate_(learning_rate),
+	  momentum_(momentum),
           Layer(f) {}
 
 
@@ -27,19 +28,20 @@ void FullyConnectedLayer::ConnectNeurons(
     for (int i=0; i<num_output_; i++) {
         struct Weight w;
 
-        w.val = GenRandom(-0.5, 0.5);
+        w.val = 0;//GenRandom(-0.5, 0.5);
         w.lazy_sub = 0.0;
         w.count = 0;
         biases_[i] = w;
     }
 
+    double lim = 1.0 / sqrt( num_input_ );
     weights_.resize(num_input_);
     for (int i=0; i<num_input_; i++) {
         weights_[i].resize(num_output_);
         for (int j=0; j<num_output_; j++) {
             struct Weight w;
 
-            w.val = GenRandom(-1.0, 1.0);
+            w.val = GenRandom(0.0, lim);
             w.lazy_sub= 0.0;
             w.count = 0;
             weights_[i][j] = w;
@@ -52,9 +54,17 @@ void FullyConnectedLayer::ConnectNeurons(
 void FullyConnectedLayer::CalculateOutputUnits(vector<struct Neuron> &units) {
     assert(units.size() == num_output_);
 
+    double outmax = -1000;
+    double outmin = 1000;
+
     for (int i=0; i<num_output_; i++) {
         units[i].z = f_->Calculate(units[i].u, units);
+
+	outmax = max( outmax , units[i].z );
+	outmin = min( outmin , units[i].z );
     }
+
+    //printf( "fullyout : %lf %lf\n" , outmax , outmin );
 }
 
 void FullyConnectedLayer::Propagate(
@@ -143,13 +153,17 @@ void FullyConnectedLayer::ApplyLazySubtrahend() {
             Weight &w = weights_[i][j];
 
             assert(w.count > 0);
-            w.val -= w.lazy_sub / w.count;
+
+	    double prevdelta = -w.lazy_sub / w.count + w.prev_delta * momentum_;
+            w.val += prevdelta;
+	    w.prev_delta = prevdelta;
             w.lazy_sub = 0.0;
             w.count = 0;
         }
     }
 
     assert(biases_.size() == num_output_);
+    /*
     for (int i=0; i<num_output_; i++) {
         Weight &w = biases_[i];
 
@@ -158,4 +172,5 @@ void FullyConnectedLayer::ApplyLazySubtrahend() {
         w.lazy_sub = 0.0;
         w.count = 0;
     }
+    */
 }

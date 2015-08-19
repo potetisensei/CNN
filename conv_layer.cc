@@ -7,7 +7,8 @@ ConvLayer::ConvLayer(
   int breadth_filter, 
   int num_filters, 
   ActivationFunction *f, 
-  double learning_rate)
+  double learning_rate,
+  double momentum)
     :  neuron_connected_(false),
        breadth_neuron_(breadth_neuron), 
        num_channels_(num_channels), 
@@ -15,6 +16,7 @@ ConvLayer::ConvLayer(
        breadth_filter_(breadth_filter),
        num_filters_(num_filters),
        learning_rate_(learning_rate),
+       momentum_(momentum),
        Layer(f) {
   assert(stride >= 1);
 
@@ -50,13 +52,15 @@ void ConvLayer::ConnectNeurons(
   for (int i=0; i<num_filters_; i++) { // Bijm == Bm
     struct Weight w;
 
-    w.val = GenRandom(-0.5, 0.5);
+    w.val = 0.0;//GenRandom(-0.5, 0.5);
     w.lazy_sub = 0.0;
     w.count = 0;
     biases_[i] = w;
   }
 
-  double lim = 1.0/sqrt(num_input_);
+
+  //double lim = 1.0/sqrt(num_input_);
+  double lim = 1.0 / sqrt(num_channels_*breadth_filter_*breadth_filter_);
   weights_.resize(num_filters_);
   for (int m=0; m<num_filters_; m++) {
     weights_[m].resize(num_channels_);
@@ -67,7 +71,7 @@ void ConvLayer::ConnectNeurons(
         for (int j=0; j<breadth_filter_; j++) {
           struct Weight w;
 
-          w.val = GenRandom(-lim, lim);
+          w.val = GenRandom(0, lim);
           w.lazy_sub = 0.0;
           w.count = 0;
           weights_[m][k][i][j] = w;
@@ -175,6 +179,9 @@ void ConvLayer::BackPropagate(
     delta[i] = 0.0;
   }
 
+  double deltamax = -1000;
+  double deltamin = 1000;
+  
   assert(weights_.size() == num_filters_);
   for (int m=0; m<num_filters_; m++) { 
     assert(weights_[m].size() == num_channels_);
@@ -200,6 +207,9 @@ void ConvLayer::BackPropagate(
                   next_delta[output_idx] * 
                   weights_[m][k][p][q].val * 
                   f->CalculateDerivative(input[input_idx].u);
+
+		deltamax = max( deltamax , delta[input_idx] );
+		deltamin = min( deltamin , delta[input_idx] );		
     	      }
             }
           }
@@ -207,6 +217,8 @@ void ConvLayer::BackPropagate(
       }
     }
   }
+
+  //printf( "convdelta : %lf %lf\n" , deltamax , deltamin );
 }
 
 void ConvLayer::UpdateLazySubtrahend(
@@ -281,7 +293,11 @@ void ConvLayer::ApplyLazySubtrahend() {
           struct Weight &w = weights_[m][k][p][q];
 
           assert(w.count > 0);
-          w.val -= w.lazy_sub / w.count;
+
+	  double prevdelta = - w.lazy_sub / w.count - momentum_ * w.prev_delta;
+          w.val += prevdelta;
+	  w.prev_delta = prevdelta;
+	  
           w.lazy_sub = 0.0;
           w.count = 0;
         }
@@ -290,6 +306,7 @@ void ConvLayer::ApplyLazySubtrahend() {
   }
 
   assert(biases_.size() == num_filters_);
+  /*
   for (int m=0; m<num_filters_; m++) {
     struct Weight &w = biases_[m];
 
@@ -298,4 +315,5 @@ void ConvLayer::ApplyLazySubtrahend() {
     w.lazy_sub = 0.0;
     w.count = 0;
   }
+  */
 }
