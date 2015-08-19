@@ -32,8 +32,8 @@ void TestFullyConnectedLayer() {
         DoubleVector2d inputs;
         DoubleVector2d outputs;
 
-        inputs.resize(2);
-        outputs.resize(2);
+        inputs.resize(3);
+        outputs.resize(3);
         input.resize(3, 0);
         output.resize(3);
         for (int i=0; i<3; i++) {
@@ -41,22 +41,22 @@ void TestFullyConnectedLayer() {
             fill(output.begin(), output.end(), 0.0);
             input[i] = 1.0;
             output[i] = 1.0;
-            inputs[0] = input;
-            inputs[1] = input;
-            outputs[0] = output;
-            outputs[1] = output;
-            net.TrainNetwork(inputs, outputs);
-            printf("%d: \n", j);
+            inputs[i] = input;
+            outputs[i] = output;
+        }
+        net.TrainNetwork(inputs, outputs);
+        printf("%d: \n", j);
+        for (int i=0; i<3; i++) {
             printf("input: ");
             for (int k=0; k<3; k++) {
-                printf("%f ", input[k]);
+                printf("%f ", inputs[i][k]);
             }puts("");
             printf("expect: ");
             for (int k=0; k<3; k++) {
-                printf("%f ", output[k]);
+                printf("%f ", outputs[i][k]);
             }
             puts("");
-            net.PropagateLayers(input, output);
+            net.PropagateLayers(inputs[i], output);
             printf("output: ");
             for (int k=0; k<3; k++) {
                 printf("%f ", output[k]);
