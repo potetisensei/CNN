@@ -14,7 +14,8 @@ class PoolLayer : public Layer {
         int breadth_neuron, 
         int num_channels, 
         int stride, 
-        int breadth_filter);
+        int breadth_filter ,
+	ActivationFunction *f );
     virtual ~PoolLayer() {}
 
     virtual void CheckInputUnits(vector<struct Neuron> const &units);

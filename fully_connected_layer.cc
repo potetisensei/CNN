@@ -89,6 +89,9 @@ void FullyConnectedLayer::BackPropagate(
     assert(next_delta.size() == num_output_);
     assert(weights_.size() == num_input_);
 
+    double deltamax = -1000;
+    double deltamin = 1000;
+    
     delta.resize(num_input_);
     for (int i=0; i<num_input_; i++) {
         delta[i] = 0.0;
@@ -99,8 +102,13 @@ void FullyConnectedLayer::BackPropagate(
 
             delta[i] += 
                 next_delta[j] * w * f->CalculateDerivative(input[i].u);
+
+	    deltamax = max( deltamax , delta[i] );
+	    deltamin = min( deltamin , delta[i] );	    
         }
     }
+
+    //printf( "fullydelta : %lf %lf\n" , deltamax , deltamin );
 }
 
 void FullyConnectedLayer::UpdateLazySubtrahend(
