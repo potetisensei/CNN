@@ -125,9 +125,6 @@ void PoolLayer::Propagate(
 
   //printf( "pool : %lf %lf\n" , outputmax , outputmin );
 
-  for( int i = 0; i < input.size(); i++ )
-    assert( input[i].z == output[i].u );
-
   
   propagated_ = true;
 }

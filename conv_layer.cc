@@ -167,8 +167,6 @@ void ConvLayer::BackPropagate(
   int area_output = breadth_output_ * breadth_output_;
   int area_input = breadth_neuron_ * breadth_neuron_;
 
-  assert(0);
-  
   assert(input.size() == num_input_);
   assert(next_delta.size() == num_output_);
   
