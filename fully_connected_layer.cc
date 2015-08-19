@@ -163,14 +163,16 @@ void FullyConnectedLayer::ApplyLazySubtrahend() {
     }
 
     assert(biases_.size() == num_output_);
-    /*
+
     for (int i=0; i<num_output_; i++) {
         Weight &w = biases_[i];
 
         assert(w.count > 0);
-        w.val -= w.lazy_sub / w.count;
+	double prevdelta = -w.lazy_sub / w.count + w.prev_delta * momentum_;
+        w.val += prevdelta;
+	w.prev_delta = prevdelta;
         w.lazy_sub = 0.0;
         w.count = 0;
     }
-    */
+
 }

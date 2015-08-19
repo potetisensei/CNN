@@ -306,14 +306,17 @@ void ConvLayer::ApplyLazySubtrahend() {
   }
 
   assert(biases_.size() == num_filters_);
-  /*
+
   for (int m=0; m<num_filters_; m++) {
     struct Weight &w = biases_[m];
 
     assert(w.count > 0);
-    w.val -= w.lazy_sub / w.count;
+
+    double prevdelta = -w.lazy_sub / w.count + momentum_ * w.prev_delta;
+    w.val += prevdelta;
+    w.prev_delta = prevdelta;
     w.lazy_sub = 0.0;
     w.count = 0;
   }
-  */
+
 }
