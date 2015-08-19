@@ -96,7 +96,7 @@ void NeuralNet::TrainNetwork(DoubleVector2d &inputs, DoubleVector2d &expected_ou
     }
 
     for (int i=last_idx-1; i>=0; i--) {
-      layers_[i]->ApplyLazySubtrahend();
+        layers_[i]->ApplyLazySubtrahend();
     }
 
 }

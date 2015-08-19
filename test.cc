@@ -508,9 +508,9 @@ void TestMNIST(){
 }
 
 int main(){
-  //TestFullyConnectedLayer();
+  TestFullyConnectedLayer();
   //TestConvLayer();  
   //TestPoolLayer();
   //TestDeepLearning();
-  TestMNIST();
+  //TestMNIST();
 }
