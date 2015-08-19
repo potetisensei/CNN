@@ -294,7 +294,7 @@ void ConvLayer::ApplyLazySubtrahend() {
 
           assert(w.count > 0);
 
-	  double prevdelta = - w.lazy_sub / w.count - momentum_ * w.prev_delta;
+	  double prevdelta = - w.lazy_sub / w.count + momentum_ * w.prev_delta;
           w.val += prevdelta;
 	  w.prev_delta = prevdelta;
 	  
