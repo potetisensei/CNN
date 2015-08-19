@@ -16,9 +16,6 @@
 
 using namespace std;
 
-mt19937 mt;
-uniform_real_distribution<> urand(0,1);
-
 void TestFullyConnectedLayer() {
     NeuralNet net;
     TangentSigmoid tanh;
@@ -511,7 +508,6 @@ void TestMNIST(){
 }
 
 int main(){
-  mt.seed( time(NULL) );
   //TestFullyConnectedLayer();
   //TestConvLayer();  
   //TestPoolLayer();
