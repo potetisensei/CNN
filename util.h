@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <vector>
 #include <random>
+
 using namespace std;
 
 typedef vector<vector<double> > DoubleVector2d;

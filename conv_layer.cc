@@ -3,7 +3,8 @@
 ConvLayer::ConvLayer(
   int breadth_neuron, 
   int num_channels, 
-  int stride, 
+  int stride,
+  int padding,
   int breadth_filter, 
   int num_filters, 
   ActivationFunction *f, 
@@ -12,7 +13,8 @@ ConvLayer::ConvLayer(
     :  neuron_connected_(false),
        breadth_neuron_(breadth_neuron), 
        num_channels_(num_channels), 
-       stride_(stride), 
+       stride_(stride),
+       padding_(padding),
        breadth_filter_(breadth_filter),
        num_filters_(num_filters),
        learning_rate_(learning_rate),
@@ -52,7 +54,7 @@ void ConvLayer::ConnectNeurons(
   for (int i=0; i<num_filters_; i++) { // Bijm == Bm
     struct Weight w;
 
-    w.val = 0.0;//GenRandom(-0.5, 0.5);
+    w.val = 0.0;//GenRandom(0, 0.1);
     w.lazy_sub = 0.0;
     w.count = 0;
     biases_[i] = w;
@@ -96,7 +98,9 @@ void ConvLayer::CalculateOutputUnits(vector<struct Neuron> &units) {
     outputmin = min( outputmin , units[i].z );    
   }
 
-  //printf( "convsig : %lf %lf\n" , outputmax , outputmin );
+#if DEBUG
+  printf( "convsig : %lf %lf\n" , outputmax , outputmin );
+#endif
 }
 
 
@@ -128,21 +132,21 @@ void ConvLayer::Propagate(
         int output_idx = m*area_output + i*breadth_output_ + j;
         double sum_conv = 0.0;
 
-        assert(i*stride_ < breadth_neuron_);
-        assert(j*stride_ < breadth_neuron_);
+        assert(i*stride_ - padding_ < breadth_neuron_);
+        assert(j*stride_ - padding_ < breadth_neuron_);
 
         for (int k=0; k<num_channels_; k++) {
           assert(weights_[m][k].size() == breadth_filter_);
           for (int p=0; p<breadth_filter_; p++) {
             assert(weights_[m][k][p].size() == breadth_filter_);
             for (int q=0; q<breadth_filter_; q++) {
-              int x = j*stride_ + q;
-              int y = i*stride_ + p;
+              int x = j*stride_ - padding_ + q;
+              int y = i*stride_ - padding_ + p;
               int input_idx = k*area_input + y*breadth_neuron_ + x;
               double z = 0.0;
 
               // Fix the way of padding
-              if (x < breadth_neuron_ && y < breadth_neuron_) {
+              if ( 0 <= x && x < breadth_neuron_ && 0 <= y && y < breadth_neuron_) {
                 assert(input_idx < input.size());
                 z = input[input_idx].z;
               }
@@ -160,7 +164,9 @@ void ConvLayer::Propagate(
     }
   }
 
-  //printf( "conv : %lf %lf\n" , outputmax , outputmin );
+#if DEBUG
+  printf( "conv : %lf %lf\n" , outputmax , outputmin );
+#endif
 }
  
 void ConvLayer::BackPropagate(
@@ -190,19 +196,22 @@ void ConvLayer::BackPropagate(
         int output_idx = m*area_output + i*breadth_output_ + j;
         double sum_conv = 0.0;
   
-        assert(i*stride_ < breadth_neuron_);
-        assert(j*stride_ < breadth_neuron_);
+        assert(i*stride_ - padding_ < breadth_neuron_);
+        assert(j*stride_ - padding_ < breadth_neuron_);
   
     	for (int k=0; k<num_channels_; k++) {
           assert(weights_[m][k].size() == breadth_filter_);
           for (int p=0; p<breadth_filter_; p++) {
             assert(weights_[m][k][p].size() == breadth_filter_);
             for (int q=0; q<breadth_filter_; q++) {
-              int x = j*stride_ + q;
-              int y = i*stride_ + p;
+              int x = j*stride_ - padding_ + q;
+              int y = i*stride_ - padding_ + p;
               int input_idx = k*area_input + y*breadth_neuron_ + x;
     
-              if (x < breadth_neuron_ && y < breadth_neuron_) {
+              if ( 0 <= x && x < breadth_neuron_ && 0 <= y && y < breadth_neuron_) {
+
+		assert( 0 <= input_idx && input_idx < delta.size() );
+		
                 delta[input_idx] += 
                   next_delta[output_idx] * 
                   weights_[m][k][p][q].val * 
@@ -218,7 +227,9 @@ void ConvLayer::BackPropagate(
     }
   }
 
-  //printf( "convdelta : %lf %lf\n" , deltamax , deltamin );
+#if DEBUG
+  printf( "convdelta : %lf %lf\n" , deltamax , deltamin );
+#endif
 }
 
 void ConvLayer::UpdateLazySubtrahend(
@@ -241,20 +252,19 @@ void ConvLayer::UpdateLazySubtrahend(
 	  Weight &w = weights_[m][k][p][q];
 
 	  w.count++;
-	  
+
 	  for (int i=0; i<breadth_output_; i++) {
-	    assert(i*stride_ < breadth_neuron_);
+	    assert(i*stride_ - padding_ < breadth_neuron_);
 	    
 	    for (int j=0; j<breadth_output_; j++) {
-	      assert(j*stride_ < breadth_neuron_);	      
+	      assert(j*stride_ - padding_ < breadth_neuron_);	      
 
-
-              int x = j*stride_ + q;
-              int y = i*stride_ + p;
+              int x = j*stride_ - padding_ + q;
+              int y = i*stride_ - padding_ + p;
 	      int output_idx = m*area_output + i*breadth_output_ + j;
 	      int input_idx = k*area_input + y*breadth_neuron_ + x;
 
-	      if (x < breadth_neuron_ && y < breadth_neuron_) {
+	      if (0 <= x && x < breadth_neuron_ && 0 <= y && y < breadth_neuron_) {
               
                 assert(output_idx < next_delta.size());
                 assert(input_idx < input.size());
@@ -275,14 +285,13 @@ void ConvLayer::UpdateLazySubtrahend(
     struct Weight &w = biases_[m];
 
     w.count++;
-    
+
     for (int i=0; i<breadth_output_; i++) {
       for (int j=0; j<breadth_output_; j++) {
         int output_idx = m*area_output + i*breadth_output_ + j;
-          
+
         assert(output_idx < next_delta.size());
-        w.lazy_sub += next_delta[output_idx] * learning_rate_;
-	
+        w.lazy_sub += learning_rate_ * next_delta[output_idx];
       }
     }
   }
@@ -320,8 +329,10 @@ void ConvLayer::ApplyLazySubtrahend() {
     assert(w.count > 0);
 
     double prevdelta = - w.lazy_sub / w.count + momentum_ * w.prev_delta;
+
     w.val += prevdelta;
     w.prev_delta = prevdelta;
+    
     w.lazy_sub = 0.0;
     w.count = 0;
   }

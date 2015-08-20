@@ -64,7 +64,9 @@ void FullyConnectedLayer::CalculateOutputUnits(vector<struct Neuron> &units) {
 	outmin = min( outmin , units[i].z );
     }
 
-    //printf( "fullyout : %lf %lf\n" , outmax , outmin );
+#if DEBUG
+    printf( "fullyout : %lf %lf\n" , outmax , outmin );
+#endif
 }
 
 void FullyConnectedLayer::Propagate(
@@ -118,7 +120,9 @@ void FullyConnectedLayer::BackPropagate(
         }
     }
 
-    //printf( "fullydelta : %lf %lf\n" , deltamax , deltamin );
+#if DEBUG
+    printf( "fullydelta : %lf %lf\n" , deltamax , deltamin );
+#endif
 }
 
 void FullyConnectedLayer::UpdateLazySubtrahend(
@@ -157,6 +161,7 @@ void FullyConnectedLayer::ApplyLazySubtrahend() {
 	    double prevdelta = -w.lazy_sub / w.count + w.prev_delta * momentum_;
             w.val += prevdelta;
 	    w.prev_delta = prevdelta;
+	    
             w.lazy_sub = 0.0;
             w.count = 0;
         }
@@ -168,9 +173,11 @@ void FullyConnectedLayer::ApplyLazySubtrahend() {
         Weight &w = biases_[i];
 
         assert(w.count > 0);
+
 	double prevdelta = -w.lazy_sub / w.count + w.prev_delta * momentum_;
         w.val += prevdelta;
 	w.prev_delta = prevdelta;
+	
         w.lazy_sub = 0.0;
         w.count = 0;
     }

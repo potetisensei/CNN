@@ -12,7 +12,8 @@ public:
     ConvLayer(
         int breadth_neuron, 
         int num_channels, 
-        int stride, 
+        int stride,
+	int padding,
         int breadth_filter, 
         int num_filters, 
         ActivationFunction *f, 
@@ -34,6 +35,7 @@ private:
     int breadth_neuron_;
     int num_channels_;
     int stride_;
+    int padding_;
     int breadth_filter_;
     int num_filters_;
     int breadth_output_;

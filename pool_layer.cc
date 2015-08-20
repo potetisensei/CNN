@@ -65,7 +65,9 @@ void PoolLayer::CalculateOutputUnits(vector<struct Neuron> &units) {
     outputmin = min( outputmin , units[i].z );    
   }
 
-  //printf( "poolsig : %lf %lf\n" , outputmax , outputmin );
+#if debug
+  printf( "poolsig : %lf %lf\n" , outputmax , outputmin );
+#endif
 }
 
 void PoolLayer::Propagate(
@@ -121,8 +123,9 @@ void PoolLayer::Propagate(
     }
   }
 
-  //printf( "pool : %lf %lf\n" , outputmax , outputmin );
-
+#if DEBUG
+  printf( "pool : %lf %lf\n" , outputmax , outputmin );
+#endif
   
   propagated_ = true;
 }
@@ -152,7 +155,9 @@ void PoolLayer::BackPropagate(
     deltamin = min( deltamin , delta[maxid[i]] );
   }
 
-  //printf( "pooldelta : %lf %lf\n" , deltamax , deltamin );
+#if DEBUG
+  printf( "pooldelta : %lf %lf\n" , deltamax , deltamin );
+#endif
   
   propagated_ = false;
 }
