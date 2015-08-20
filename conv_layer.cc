@@ -236,6 +236,7 @@ void ConvLayer::UpdateLazySubtrahend(
     for (int k=0; k<num_channels_; k++) {
       assert(weights_[m][k].size() == breadth_filter_);
       for (int p=0; p<breadth_filter_; p++) {
+<<<<<<< HEAD
 	assert(weights_[m][k][p].size() == breadth_filter_);
 	for (int q=0; q<breadth_filter_; q++) {
 	  Weight &w = weights_[m][k][p][q];
@@ -256,6 +257,24 @@ void ConvLayer::UpdateLazySubtrahend(
 
 	      if (x < breadth_neuron_ && y < breadth_neuron_) {
               
+=======
+        assert(weights_[m][k][p].size() == breadth_filter_);
+        for (int q=0; q<breadth_filter_; q++) {
+          Weight &w = weights_[m][k][p][q];
+
+          w.count++;    
+          for (int i=0; i<breadth_output_; i++) {
+            assert(i*stride_ < breadth_neuron_);
+            for (int j=0; j<breadth_output_; j++) {
+              int x = j*stride_ + q;
+              int y = i*stride_ + p;
+              int output_idx = m*area_output + i*breadth_output_ + j;
+              int input_idx = k*area_input + y*breadth_neuron_ + x;
+
+              assert(j*stride_ < breadth_neuron_);
+
+              if (x < breadth_neuron_ && y < breadth_neuron_) {
+>>>>>>> 1942daaff4280db026ada049eccb347811e96014
                 assert(output_idx < next_delta.size());
                 assert(input_idx < input.size());
                 w.lazy_sub += 
@@ -275,14 +294,21 @@ void ConvLayer::UpdateLazySubtrahend(
     struct Weight &w = biases_[m];
 
     w.count++;
+<<<<<<< HEAD
     
+=======
+>>>>>>> 1942daaff4280db026ada049eccb347811e96014
     for (int i=0; i<breadth_output_; i++) {
       for (int j=0; j<breadth_output_; j++) {
         int output_idx = m*area_output + i*breadth_output_ + j;
           
         assert(output_idx < next_delta.size());
+<<<<<<< HEAD
         w.lazy_sub += next_delta[output_idx] * learning_rate_;
 	
+=======
+        w.lazy_sub += next_delta[output_idx];
+>>>>>>> 1942daaff4280db026ada049eccb347811e96014
       }
     }
   }
@@ -296,15 +322,15 @@ void ConvLayer::ApplyLazySubtrahend() {
       assert(weights_[m][k].size() == breadth_filter_);
       for (int p=0; p<breadth_filter_; p++) {
         assert(weights_[m][k][p].size() == breadth_filter_);
-	for (int q=0; q<breadth_filter_; q++) {
+        for (int q=0; q<breadth_filter_; q++) {
           struct Weight &w = weights_[m][k][p][q];
 
           assert(w.count > 0);
 
-	  double prevdelta = - w.lazy_sub / w.count + momentum_ * w.prev_delta;
+          double prevdelta = - w.lazy_sub/w.count + momentum_ * w.prev_delta;
           w.val += prevdelta;
-	  w.prev_delta = prevdelta;
-	  
+          w.prev_delta = prevdelta;
+
           w.lazy_sub = 0.0;
           w.count = 0;
         }
