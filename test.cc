@@ -285,6 +285,8 @@ int tlabel[60000];
 
 void TestMNIST(){
 
+  mt19937 mt( time(NULL) );
+  
   int magic_number;
   int N, Nt, Nl, H, W;
   
@@ -302,7 +304,7 @@ void TestMNIST(){
   /*
   srand(time(NULL));
   net.SetInputSize(28*28);
-  net.AppendLayer(new ConvLayer(28, 1, 1, 5, 8, &sigmoid, 0.01, 0.9));
+  net.AppendLayer(new ConvLayer(28, 1, 1, 2, 5, 8, &sigmoid, 0.01, 0.9));
   net.AppendLayer(new PoolLayer(28, 8, 2, 2, &id));
   net.AppendLayer(new FullyConnectedLayer(14*14*8, 10, &softmax, 0.01, 0.9));
   net.ConnectLayers();
@@ -432,11 +434,13 @@ void TestMNIST(){
       in.clear();
       out = vector<double>(10,0.0);
 
+      int lnum = mt()%Nl;
+
       for( int i = 0; i < H; i++ )
 	for( int j = 0; j < W; j++ )
-	  in.push_back( limg[lloop%Nl][i*W+j] );
+	  in.push_back( limg[lnum][i*W+j] );
 
-      out[ llabel[lloop%Nl] ] = 1.0;
+      out[ llabel[lnum] ] = 1.0;
 
       ins.clear();
       ins.push_back( in );
@@ -452,9 +456,11 @@ void TestMNIST(){
       in.clear();
       out = vector<double>(10,0.0);
 
+      int tnum = mt()%Nt;
+
       for( int i = 0; i < H; i++ )
 	for( int j = 0; j < W; j++ )
-	  in.push_back( timg[tloop%Nt][i*W+j] );
+	  in.push_back( timg[tnum][i*W+j] );
 
       net.PropagateLayers( in , out );
 
@@ -469,7 +475,7 @@ void TestMNIST(){
       printf( "\n" );
 #endif
       
-      if( res == tlabel[tloop%Nt] ) namonakiacc++;
+      if( res == tlabel[tnum] ) namonakiacc++;
     }
 
     cerr << "ac : " << namonakiacc << " / " << 1000 << endl;
