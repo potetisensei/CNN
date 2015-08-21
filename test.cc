@@ -167,13 +167,13 @@ void TestPoolLayer() {
     bmp.writeData("output.bmp");
 }
 
-/*
+
 void TestDeepLearning(){
 
   mt19937 mt( time( NULL ) );
   int MAX_FILE = 12499;
   char filename[256];
-  int LOOP_N = 300;//25000-2;//1000;
+  int LOOP_N = 300;
   int namonakiacc = 0;
   vector<double> in, out;
   DoubleVector2d ins, outs;
@@ -185,86 +185,94 @@ void TestDeepLearning(){
   RectifiedLinear rel;
   LogisticSigmoid sigmoid;
   Softmax softmax;
-  double rate = 0.00001;
-  
-  ConvLayer *conv1 = new ConvLayer(64, 3, 1, 5, 16, &sigmoid, rate);
-  PoolLayer *pool1 = new PoolLayer(64, 16, 2, 2);
-  ConvLayer *conv2 = new ConvLayer(32, 32, 1, 5, 20, &sigmoid, rate);
-  PoolLayer *pool2 = new PoolLayer(32, 20, 2, 2);
-  ConvLayer *conv3 = new ConvLayer(16, 20, 1, 5, 20, &sigmoid, rate);
-  PoolLayer *pool3 = new PoolLayer(16, 20, 2, 2);
-  FullyConnectedLayer *full1 = new FullyConnectedLayer(8*8*20, &softmax, rate);
-  FullyConnectedLayer *full2 = new FullyConnectedLayer(2, &sigmoid, rate);
-  
+  Identity id;
 
-  srand(time(NULL));
-  net.AppendLayer(conv1);
-  net.AppendLayer(pool1);
-  net.AppendLayer(conv2);
-  net.AppendLayer(pool2);
-  net.AppendLayer(conv3);
-  net.AppendLayer(pool3);
-  net.AppendLayer(full1);
-  net.AppendLayer(full2);  
+  net.SetInputSize(128*128*3);
+  net.AppendLayer(new ConvLayer(128, 3, 1, 1, 3, 8, &sigmoid, 0.01, 0.9));
+  net.AppendLayer(new PoolLayer(128, 8, 2, 2, &id));
+  net.AppendLayer(new FullyConnectedLayer(64*64*8, 2, &softmax, 0.01, 0.9));
   net.ConnectLayers();
-
-  vector<double> testin;
-  pixels = stbi_load( "processed/dog.0.jpg" , &width , &height , &bpp , 0 );
-  for( int k = 0; k < 3; k++ )
-    for( int i = 0; i < height; i++ )
-      for( int j = 0; j < width; j++ )
-	testin.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
   
-  for (int o=0; o<1000; o++) {
-      for( int loop = 0; loop < LOOP_N; loop++ ){
-        in.clear();
-        out.clear();
+  /*
+  srand(time(NULL));
+  net.SetInputSize(128*128*3);
+  net.AppendLayer(new ConvLayer(128, 3, 1, 1, 3, 8, &sigmoid, 0.01, 0.9));
+  net.AppendLayer(new PoolLayer(128, 8, 2, 2, &id));
+  net.AppendLayer(new ConvLayer(64, 8, 1, 1, 3, 16, &sigmoid, 0.01, 0.9));
+  net.AppendLayer(new PoolLayer(64, 16, 2, 2, &id));
+  net.AppendLayer(new ConvLayer(32, 16, 1, 1, 3, 24, &sigmoid, 0.01, 0.9));
+  net.AppendLayer(new PoolLayer(32, 24, 2, 2, &id));    
+  net.AppendLayer(new FullyConnectedLayer(16*16*24, 2, &softmax, 0.01, 0.9));
+  net.ConnectLayers();
+  */
+
+
+  for( int bloop = 0; bloop < 100; bloop++ ){
+    cerr << bloop << " / 100" << endl;
+    for( int loop = 0; loop < 100; loop++ ){
+      in.clear();
+      out.clear();
       
-        if( //mt()
-            loop % 2 == 0 ){
-          out.push_back( 1.0 ); out.push_back( 0.0 );
-          sprintf( filename , "processed/cat.%d.jpg" , loop/2
-          //mt()%MAX_FILE
-          );
-        } else {
-          out.push_back( 0.0 ); out.push_back( 1.0 );
-          sprintf( filename , "processed/dog.%d.jpg" , loop/2
-          //mt()%MAX_FILE
-           );
-        }
-      
-        pixels = stbi_load( filename , &width , &height , &bpp , 0 );
-    
-        for( int k = 0; k < 3; k++ )
-          for( int i = 0; i < height; i++ )
-    	for( int j = 0; j < width; j++ )
-    	  in.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
-    
-        ins.clear();
-        ins.push_back( in );
-        outs.clear();
-        outs.push_back( out );
-    
-        net.TrainNetwork(ins, outs);
-        vector<double> out2(2);
-    
-        net.PropagateLayers( testin , out2 );
-    
-        cout << filename << endl;
-        cout << "o: " << out2[0] << " " << out2[1] << endl;
-        //if (out2[0] > 0.3) {
-        //    conv1->learning_rate_ = 0.000005;
-        //    conv1->learning_rate_ = 0.000005;
-        //    full1->learning_rate_ = 0.000005;
-        //    full2->learning_rate_ = 0.000005;
-        //}
-            
-        cout << endl;
+      if( mt() % 2 == 0 ){
+	out.push_back( 1.0 ); out.push_back( 0.0 );
+	sprintf( filename , "processed/cat.%d.jpg" , mt()%MAX_FILE );
+      } else {
+	out.push_back( 0.0 ); out.push_back( 1.0 );
+	sprintf( filename , "processed/dog.%d.jpg" , mt()%MAX_FILE );
       }
+      
+      pixels = stbi_load( filename , &width , &height , &bpp , 0 );
+    
+      for( int k = 0; k < 3; k++ )
+	for( int i = 0; i < height; i++ )
+	  for( int j = 0; j < width; j++ )
+	    in.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
+    
+      ins.clear();
+      ins.push_back( in );
+      outs.clear();
+      outs.push_back( out );
+    
+      net.TrainNetwork(ins, outs);
+      vector<double> out2(2);
+    }
+
+    namonakiacc = 0;
+    for( int loop = 0; loop < 100; loop++ ){
+      in.clear();
+      out.clear();
+      int ans;
+      
+      if( mt() % 2 == 0 ){
+	ans = 0;
+	out.push_back( 1.0 ); out.push_back( 0.0 );
+	sprintf( filename , "processed/cat.%d.jpg" , mt()%MAX_FILE );
+      } else {
+	ans = 1;
+	out.push_back( 0.0 ); out.push_back( 1.0 );
+	sprintf( filename , "processed/dog.%d.jpg" , mt()%MAX_FILE );
+      }
+      
+      pixels = stbi_load( filename , &width , &height , &bpp , 0 );
+    
+      for( int k = 0; k < 3; k++ )
+	for( int i = 0; i < height; i++ )
+	  for( int j = 0; j < width; j++ )
+	    in.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
+
+      net.PropagateLayers( in , out );
+
+      int res = 0;
+      if( out[0] < out[1] ) res = 1;
+
+      if( res == ans ) namonakiacc++;
+    }
+    cerr << "ac : " << namonakiacc << " / 100" << endl;
+
   }
+  
 }
 
-*/
 
 
 int rev( int x ){
@@ -515,6 +523,6 @@ int main(){
   //TestFullyConnectedLayer();
   //TestConvLayer();  
   //TestPoolLayer();
-  //TestDeepLearning();
-  TestMNIST();
+  TestDeepLearning();
+  //TestMNIST();
 }
