@@ -31,6 +31,7 @@ void FullyConnectedLayer::ConnectNeurons(
         w.val = 0;//GenRandom(-0.5, 0.5);
         w.lazy_sub = 0.0;
         w.count = 0;
+	w.gsum = EPS;
         biases_[i] = w;
     }
 
@@ -44,6 +45,7 @@ void FullyConnectedLayer::ConnectNeurons(
             w.val = GenRandom(0.0, lim);
             w.lazy_sub= 0.0;
             w.count = 0;
+	    w.gsum = EPS;
             weights_[i][j] = w;
         }
     }
@@ -136,7 +138,7 @@ void FullyConnectedLayer::UpdateLazySubtrahend(
         assert(weights_[i].size() == num_output_);
         for (int j=0; j<num_output_; j++) {
             Weight &w = weights_[i][j];
-            w.lazy_sub += learning_rate_ * next_delta[j] * input[i].z;
+            w.lazy_sub += next_delta[j] * input[i].z;
             w.count++;
         }
     }
@@ -144,7 +146,7 @@ void FullyConnectedLayer::UpdateLazySubtrahend(
     assert(biases_.size() == num_output_);
     for (int i=0; i<num_output_; i++) {
         Weight &w = biases_[i];
-        w.lazy_sub += learning_rate_ * next_delta[i];
+        w.lazy_sub += next_delta[i];
         w.count++;
     }
 }
@@ -158,11 +160,16 @@ void FullyConnectedLayer::ApplyLazySubtrahend() {
 
             assert(w.count > 0);
 
-	    double prevdelta = -w.lazy_sub / w.count + w.prev_delta * momentum_;
-            w.val += prevdelta;
-	    w.prev_delta = prevdelta;
-	    
-            w.lazy_sub = 0.0;
+	    /* momentum 
+	       double prevdelta = - w.lazy_sub * learning_rate_ / w.count + momentum_ * w.gsum;
+	       w.val += prevdelta;
+	       w.gsum = prevdelta;
+	    */
+
+	    w.gsum += (w.lazy_sub / w.count) * (w.lazy_sub / w.count);
+	    w.val -= learning_rate_ / sqrt( w.gsum ) * w.lazy_sub / w.count;
+
+	    w.lazy_sub = 0.0;
             w.count = 0;
         }
     }
@@ -174,11 +181,16 @@ void FullyConnectedLayer::ApplyLazySubtrahend() {
 
         assert(w.count > 0);
 
-	double prevdelta = -w.lazy_sub / w.count + w.prev_delta * momentum_;
-        w.val += prevdelta;
-	w.prev_delta = prevdelta;
-	
-        w.lazy_sub = 0.0;
+	/* momentum 
+	   double prevdelta = - w.lazy_sub * learning_rate_ / w.count + momentum_ * w.gsum;
+	   w.val += prevdelta;
+	   w.gsum = prevdelta;
+	*/
+
+	w.gsum += (w.lazy_sub / w.count) * (w.lazy_sub / w.count);
+	w.val -= learning_rate_ / sqrt( w.gsum ) * w.lazy_sub / w.count;
+
+	w.lazy_sub = 0.0;
         w.count = 0;
     }
 

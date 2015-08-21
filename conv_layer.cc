@@ -57,6 +57,7 @@ void ConvLayer::ConnectNeurons(
     w.val = 0.0;//GenRandom(0, 0.1);
     w.lazy_sub = 0.0;
     w.count = 0;
+    w.gsum = EPS;
     biases_[i] = w;
   }
 
@@ -76,6 +77,7 @@ void ConvLayer::ConnectNeurons(
           w.val = GenRandom(0, lim);
           w.lazy_sub = 0.0;
           w.count = 0;
+	  w.gsum = EPS;	  
           weights_[m][k][i][j] = w;
         }
       }
@@ -269,7 +271,6 @@ void ConvLayer::UpdateLazySubtrahend(
                 assert(output_idx < next_delta.size());
                 assert(input_idx < input.size());
                 w.lazy_sub += 
-                  learning_rate_ * 
                   next_delta[output_idx] * 
                   input[input_idx].z;
               }
@@ -291,7 +292,7 @@ void ConvLayer::UpdateLazySubtrahend(
         int output_idx = m*area_output + i*breadth_output_ + j;
 
         assert(output_idx < next_delta.size());
-        w.lazy_sub += learning_rate_ * next_delta[output_idx];
+        w.lazy_sub += next_delta[output_idx];
       }
     }
   }
@@ -310,9 +311,15 @@ void ConvLayer::ApplyLazySubtrahend() {
 
           assert(w.count > 0);
 
-	  double prevdelta = - w.lazy_sub / w.count + momentum_ * w.prev_delta;
-          w.val += prevdelta;
-	  w.prev_delta = prevdelta;
+	  /* momentum 
+	     double prevdelta = - w.lazy_sub * learning_rate_ / w.count + momentum_ * w.gsum;
+	     w.val += prevdelta;
+	     w.gsum = prevdelta;
+	  */
+
+	  w.gsum += (w.lazy_sub / w.count) * (w.lazy_sub / w.count);
+	  w.val -= learning_rate_ / sqrt( w.gsum ) * w.lazy_sub / w.count;
+
 	  
           w.lazy_sub = 0.0;
           w.count = 0;
@@ -328,10 +335,14 @@ void ConvLayer::ApplyLazySubtrahend() {
 
     assert(w.count > 0);
 
-    double prevdelta = - w.lazy_sub / w.count + momentum_ * w.prev_delta;
+    /* momentum 
+       double prevdelta = - w.lazy_sub * learning_rate_ / w.count + momentum_ * w.gsum;
+       w.val += prevdelta;
+       w.gsum = prevdelta;
+    */
 
-    w.val += prevdelta;
-    w.prev_delta = prevdelta;
+    w.gsum += (w.lazy_sub / w.count) * (w.lazy_sub / w.count);
+    w.val -= learning_rate_ / sqrt( w.gsum ) * w.lazy_sub / w.count;
     
     w.lazy_sub = 0.0;
     w.count = 0;

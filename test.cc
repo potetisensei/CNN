@@ -313,15 +313,14 @@ void TestMNIST(){
   Softmax softmax;
   Identity id;
 
-  /*
   srand(time(NULL));
   net.SetInputSize(28*28);
   net.AppendLayer(new ConvLayer(28, 1, 1, 2, 5, 8, &sigmoid, 0.01, 0.9));
   net.AppendLayer(new PoolLayer(28, 8, 2, 2, &id));
   net.AppendLayer(new FullyConnectedLayer(14*14*8, 10, &softmax, 0.01, 0.9));
   net.ConnectLayers();
-  */
 
+  /*
   srand(time(NULL));
   net.SetInputSize(28*28);
   net.AppendLayer(new ConvLayer(28, 1, 1, 2, 5, 8, &sigmoid, 0.01, 0.9));
@@ -330,6 +329,7 @@ void TestMNIST(){
   net.AppendLayer(new PoolLayer(14, 16, 3, 3, &id));    
   net.AppendLayer(new FullyConnectedLayer(5*5*16, 10, &softmax, 0.01, 0.9));
   net.ConnectLayers();
+  */
 
 
   /*
@@ -527,6 +527,6 @@ int main(){
   //TestFullyConnectedLayer();
   //TestConvLayer();  
   //TestPoolLayer();
-  TestDeepLearning();
-  //TestMNIST();
+  //TestDeepLearning();
+  TestMNIST();
 }

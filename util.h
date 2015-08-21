@@ -5,6 +5,9 @@
 #include <vector>
 #include <random>
 
+#define EPS 1e-7
+#define DEBUG 1
+
 using namespace std;
 
 typedef vector<vector<double> > DoubleVector2d;
@@ -24,7 +27,7 @@ typedef vector<NeuronVector3d> NeuronVector4d;
 struct Weight {
   double val; // weight
   double lazy_sub; // sum of dEn/dWij in a mini-batch datasets
-  double prev_delta;
+  double gsum;
   int count; // number of mini-batch dataset
 };
 
