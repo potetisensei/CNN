@@ -5,8 +5,8 @@
 #include <vector>
 #include <random>
 
-#define EPS 1e-7
-#define DEBUG 1
+#define EPS 1e-8
+#define DEBUG 0
 
 using namespace std;
 

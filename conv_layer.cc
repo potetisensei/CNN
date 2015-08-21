@@ -54,7 +54,7 @@ void ConvLayer::ConnectNeurons(
   for (int i=0; i<num_filters_; i++) { // Bijm == Bm
     struct Weight w;
 
-    w.val = 0.0;//GenRandom(0, 0.1);
+    w.val = GenRandom(0, 0.1);
     w.lazy_sub = 0.0;
     w.count = 0;
     w.gsum = EPS;
@@ -62,8 +62,7 @@ void ConvLayer::ConnectNeurons(
   }
 
 
-  //double lim = 1.0/sqrt(num_input_);
-  double lim = 1.0 / sqrt(num_channels_*breadth_filter_*breadth_filter_);
+  double lim = 1.0 / sqrt( num_channels_*breadth_filter_*breadth_filter_ );
   weights_.resize(num_filters_);
   for (int m=0; m<num_filters_; m++) {
     weights_[m].resize(num_channels_);

@@ -71,6 +71,13 @@ public:
     virtual double Calculate(double u, vector<struct Neuron> const &neurons) {
         double denominator = 0;
 
+	// overflow taisaku fix later
+	if( u > 30 ){
+	  for( int i = 0; i < neurons.size(); i++ )
+	    if( u+1 < neurons[i].u ) return 0;
+	  return 1;
+	}
+
         for (int i=0; i<neurons.size(); i++) {
             denominator += exp(neurons[i].u);
         }

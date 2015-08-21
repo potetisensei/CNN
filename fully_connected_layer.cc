@@ -28,7 +28,7 @@ void FullyConnectedLayer::ConnectNeurons(
     for (int i=0; i<num_output_; i++) {
         struct Weight w;
 
-        w.val = 0;//GenRandom(-0.5, 0.5);
+        w.val = GenRandom(0.0, 0.1);
         w.lazy_sub = 0.0;
         w.count = 0;
 	w.gsum = EPS;
@@ -76,6 +76,9 @@ void FullyConnectedLayer::Propagate(
         vector<struct Neuron> &output) {
     assert(input.size() == num_input_);
     assert(output.size() == num_output_);
+
+    double outmax = -1000;
+    double outmin = 1000;
     
     for (int i=0; i<num_output_; i++) {
         output[i].u = 0.0;
@@ -91,7 +94,15 @@ void FullyConnectedLayer::Propagate(
     assert(biases_.size() == num_output_);
     for (int i=0; i<num_output_; i++) {
         output[i].u += biases_[i].val;
+
+	outmax = max( outmax , output[i].u );
+	outmin = min( outmin , output[i].u );	
     }
+
+#if DEBUG
+    printf( "fully : %lf %lf\n" , outmax , outmin );
+#endif
+    
 }
 
 void FullyConnectedLayer::BackPropagate(
