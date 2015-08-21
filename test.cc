@@ -173,7 +173,7 @@ void TestDeepLearning(){
   mt19937 mt( time( NULL ) );
   int MAX_FILE = 12499;
   char filename[256];
-  int LOOP_N = 300;
+  int LOOP_N = 1000;
   int namonakiacc = 0;
   vector<double> in, out;
   DoubleVector2d ins, outs;
@@ -207,8 +207,8 @@ void TestDeepLearning(){
   */
 
 
-  for( int bloop = 0; bloop < 100; bloop++ ){
-    cerr << bloop << " / 100" << endl;
+  for( int bloop = 0; bloop < LOOP_N; bloop++ ){
+    cerr << bloop << " / " << LOOP_N << endl;
     for( int loop = 0; loop < 100; loop++ ){
       in.clear();
       out.clear();
@@ -227,6 +227,8 @@ void TestDeepLearning(){
 	for( int i = 0; i < height; i++ )
 	  for( int j = 0; j < width; j++ )
 	    in.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
+
+      stbi_image_free (pixels);      
     
       ins.clear();
       ins.push_back( in );
@@ -238,7 +240,7 @@ void TestDeepLearning(){
     }
 
     namonakiacc = 0;
-    for( int loop = 0; loop < 100; loop++ ){
+    for( int loop = 0; loop < 1000; loop++ ){
       in.clear();
       out.clear();
       int ans;
@@ -260,6 +262,8 @@ void TestDeepLearning(){
 	  for( int j = 0; j < width; j++ )
 	    in.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
 
+      stbi_image_free (pixels);      
+
       net.PropagateLayers( in , out );
 
       int res = 0;
@@ -267,7 +271,7 @@ void TestDeepLearning(){
 
       if( res == ans ) namonakiacc++;
     }
-    cerr << "ac : " << namonakiacc << " / 100" << endl;
+    cerr << "ac : " << namonakiacc << " / 1000" << endl;
 
   }
   
