@@ -17,7 +17,7 @@ typedef vector<DoubleVector3d> DoubleVector4d;
 struct Neuron {
     double u;
     double z;
-    bool is_chosen;
+    bool is_valid;
 };
 
 typedef vector<vector<struct Neuron> > NeuronVector2d;

@@ -9,9 +9,11 @@ using namespace std;
 
 class Layer {
 public:
-    Layer() : p_(1.0), f_(NULL) {}
-    Layer(double p, ActivationFunction *f) : p_(p), f_(f) {
-        assert(0.0 <= p && p <= 1.0);
+    Layer() : dropout_rate_(1.0), f_(NULL) {}
+    Layer(double dropout_rate, ActivationFunction *f) 
+            : dropout_rate_(dropout_rate), 
+              f_(f) {
+        assert(0.0 <= dropout_rate && dropout_rate <= 1.0);
     }
 
     virtual ~Layer() {}
@@ -27,7 +29,7 @@ public:
 
     ActivationFunction *f_;
 private:
-    double p_;
+    double dropout_rate_;
 };
 
 #endif

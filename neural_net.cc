@@ -104,7 +104,7 @@ void NeuralNet::TrainNetwork(DoubleVector2d &inputs, DoubleVector2d &expected_ou
 
     for (int i=0; i<last_idx; i++) {
         for (int j=0; j<all_neurons_[i].size(); j++) {
-            all_neurons_[i][j].is_chosen = true;
+            all_neurons_[i][j].is_valid = true;
         }
     }
 }
