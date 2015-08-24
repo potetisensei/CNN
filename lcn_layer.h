@@ -1,0 +1,44 @@
+#ifndef _LCN_LAYER_H_
+#define _LCN_LAYER_H_
+
+#include <vector>
+#include <algorithm>
+#include <limits>
+#include "layer.h"
+#include "util.h"
+using namespace std;
+
+class LCNLayer : public Layer {
+ public:
+    LCNLayer(
+        int breadth_neuron, 
+        int num_channels, 
+        int stride, 
+        int padding,
+        int breadth_filter,
+	    ActivationFunction *f);
+    virtual ~LCNLayer() {}
+
+    virtual void CheckInputUnits(vector<struct Neuron> const &units);
+    virtual void ArrangeOutputUnits(vector<struct Neuron> &units);
+    virtual void ConnectNeurons(vector<struct Neuron> const &input, vector<struct Neuron> const &output);
+    virtual void CalculateOutputUnits(vector<struct Neuron> &units);
+    virtual void Propagate(vector<struct Neuron> const &input, vector<struct Neuron> &output);
+    virtual void BackPropagate(vector<struct Neuron> const &input, vector<double> const &next_delta, ActivationFunction *f, vector<double> &delta);
+    virtual void UpdateLazySubtrahend(vector<struct Neuron> const &input, const vector<double> &next_delta);
+    virtual void ApplyLazySubtrahend();
+
+private:
+    bool neuron_connected_;
+    bool propagated_;
+    int breadth_neuron_;
+    int num_channels_;
+    int stride_;
+    int padding_;
+    int breadth_filter_;
+    int breadth_output_;
+    int num_input_;
+    int num_output_;
+};
+
+#endif
