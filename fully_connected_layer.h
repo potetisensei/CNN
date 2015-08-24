@@ -10,7 +10,7 @@ using namespace std;
 
 class FullyConnectedLayer : public Layer {
 public:
-  FullyConnectedLayer(int num_input, int num_output, ActivationFunction *f, double learning_rate, double momentum);
+  FullyConnectedLayer(int num_input, int num_output, ActivationFunction *f, double learning_rate, double momentum, double dropout_rate);
     virtual ~FullyConnectedLayer() {}   
 
     virtual void CheckInputUnits(vector<struct Neuron> const &units);

@@ -30,7 +30,8 @@ void NeuralNet::ConnectLayers() {
 
 void NeuralNet::PropagateLayers(
         vector<double> &input, 
-        vector<double> &output) {
+        vector<double> &output,
+	bool is_learning ) {
     assert(layer_connected_);
     assert(all_neurons_.size() == layers_.size()+1);
 
@@ -45,8 +46,15 @@ void NeuralNet::PropagateLayers(
     }
 
     for (int i=0; i<layers_.size(); i++) {
-        layers_[i]->Propagate(all_neurons_[i], all_neurons_[i+1]);
-        layers_[i]->CalculateOutputUnits(all_neurons_[i+1]);
+      if( is_learning ){
+	for( int j = 0; j < all_neurons_[i].size(); j++ )
+	  all_neurons_[i][j].z *= all_neurons_[i][j].is_valid;
+      } else {
+	for( int j = 0; j < all_neurons_[i].size(); j++ )
+	  all_neurons_[i][j].z *= layers_[i]->dropout_rate_;
+      }
+      layers_[i]->Propagate(all_neurons_[i], all_neurons_[i+1]);
+      layers_[i]->CalculateOutputUnits(all_neurons_[i+1]);
     }
 
     for (int i=0; i<output.size(); i++) {
@@ -74,6 +82,10 @@ void NeuralNet::BackPropagateLayers(vector<double> &expected) {
          layers_[i]->UpdateLazySubtrahend(all_neurons_[i], delta);
          layers_[i]->BackPropagate(all_neurons_[i], delta, layers_[i-1]->f_, prev_delta);
          delta = prev_delta;
+	 
+	 assert( delta.size() == all_neurons_[i].size() );
+	 for( int j = 0; j < delta.size(); j++ )
+	   delta[j] *= all_neurons_[i][j].is_valid;
     }
     layers_[0]->UpdateLazySubtrahend(all_neurons_[0], delta);
 }
@@ -94,17 +106,11 @@ void NeuralNet::TrainNetwork(DoubleVector2d &inputs, DoubleVector2d &expected_ou
     }
 
     for (int i=0; i<inputs.size(); i++) {
-        PropagateLayers(inputs[i], tmp);
-        BackPropagateLayers(expected_outputs[i]);
+      PropagateLayers(inputs[i], tmp, true);
+      BackPropagateLayers(expected_outputs[i]);
     }
 
     for (int i=last_idx-1; i>=0; i--) {
         layers_[i]->ApplyLazySubtrahend();
-    }
-
-    for (int i=0; i<last_idx; i++) {
-        for (int j=0; j<all_neurons_[i].size(); j++) {
-            all_neurons_[i][j].is_valid = true;
-        }
     }
 }

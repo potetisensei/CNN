@@ -1,12 +1,12 @@
 #include "fully_connected_layer.h"
 
-FullyConnectedLayer::FullyConnectedLayer(int num_input, int num_output, ActivationFunction *f, double learning_rate, double momentum) 
+FullyConnectedLayer::FullyConnectedLayer(int num_input, int num_output, ActivationFunction *f, double learning_rate, double momentum, double dropout_rate) 
         : neuron_connected_(false),
           num_input_(num_input),
           num_output_(num_output),
           learning_rate_(learning_rate),
 	  momentum_(momentum),
-          Layer(f) {}
+          Layer(f, dropout_rate) {}
 
 
 void FullyConnectedLayer::CheckInputUnits(vector<struct Neuron> const &units) {

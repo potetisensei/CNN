@@ -6,14 +6,15 @@ PoolLayer::PoolLayer(
   int num_channels, 
   int stride, 
   int breadth_filter,
-  ActivationFunction *f )
+  ActivationFunction *f,
+  double dropout_rate )
     : neuron_connected_(false),
       propagated_(false),
       breadth_neuron_(breadth_neuron), 
       stride_(stride),
       breadth_filter_(breadth_filter),
       num_channels_(num_channels),
-      Layer(f) {
+      Layer(f, dropout_rate) {
   int num_input;
   int num_output;
 

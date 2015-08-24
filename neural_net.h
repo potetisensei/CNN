@@ -16,7 +16,7 @@ public:
     void SetInputSize(int size);
     void AppendLayer(Layer *layer);
     void ConnectLayers();
-    void PropagateLayers(vector<double> &input, vector<double> &output);
+    void PropagateLayers(vector<double> &input, vector<double> &output, bool is_learning = false );
     void BackPropagateLayers(vector<double> &expected);
     void TrainNetwork(DoubleVector2d &inputs, DoubleVector2d &expected_outputs);
 

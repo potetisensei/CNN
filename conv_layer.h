@@ -18,7 +18,8 @@ public:
         int num_filters, 
         ActivationFunction *f, 
         double learning_rate,
-	double momentum);
+	double momentum,
+	double dropout_rate);
     virtual ~ConvLayer() {}
     virtual void CheckInputUnits(vector<struct Neuron> const &units);
     virtual void ArrangeOutputUnits(vector<struct Neuron> &units);

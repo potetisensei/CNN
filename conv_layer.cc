@@ -9,7 +9,8 @@ ConvLayer::ConvLayer(
   int num_filters, 
   ActivationFunction *f, 
   double learning_rate,
-  double momentum)
+  double momentum,
+  double dropout_rate)
     :  neuron_connected_(false),
        breadth_neuron_(breadth_neuron), 
        num_channels_(num_channels), 
@@ -19,7 +20,7 @@ ConvLayer::ConvLayer(
        num_filters_(num_filters),
        learning_rate_(learning_rate),
        momentum_(momentum),
-       Layer(f) {
+       Layer(f, dropout_rate) {
   assert(stride >= 1);
 
   num_input_ = breadth_neuron * breadth_neuron;

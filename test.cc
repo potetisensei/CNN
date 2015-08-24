@@ -18,6 +18,7 @@ using namespace std;
 
 void TestFullyConnectedLayer() {
     NeuralNet net;
+    RectifiedLinear rel;    
     TangentSigmoid tanh;
     LogisticSigmoid sigmoid;    
     Softmax softmax;
@@ -27,11 +28,11 @@ void TestFullyConnectedLayer() {
 
     srand(time(NULL));
     net.SetInputSize(4);
-    net.AppendLayer(new ConvLayer(2, 1, 1, 0, 2, 4, &sigmoid, 0.1, 0.9));
-    net.AppendLayer(new PoolLayer(2, 4, 1, 1, &id));
-    net.AppendLayer(new ConvLayer(2, 4, 1, 0, 2, 16, &sigmoid, 0.1, 0.9));
-    net.AppendLayer(new PoolLayer(2, 16, 2, 2, &id));    
-    net.AppendLayer(new FullyConnectedLayer(16, 4, &softmax, 0.1, 0.9));
+    net.AppendLayer(new ConvLayer(2, 1, 1, 0, 2, 4, &rel, 0.1, 0.9, 1.0));
+    net.AppendLayer(new PoolLayer(2, 4, 1, 1, &id, 1.0));
+    net.AppendLayer(new ConvLayer(2, 4, 1, 0, 2, 16, &rel, 0.1, 0.9, 0.5));
+    net.AppendLayer(new PoolLayer(2, 16, 2, 2, &id, 1.0));    
+    net.AppendLayer(new FullyConnectedLayer(16, 4, &softmax, 0.1, 0.9, 0.5));
     net.ConnectLayers();
 
     
@@ -84,7 +85,7 @@ void TestConvLayer() {
 
     srand(time(NULL));
     net.SetInputSize(128*128*3);    
-    net.AppendLayer(new ConvLayer(128, 3, 1, 4, 9, 1, &sigmoid, 0.0005, 0.9));
+    net.AppendLayer(new ConvLayer(128, 3, 1, 4, 9, 1, &sigmoid, 0.0005, 0.9, 1.0));
     net.ConnectLayers();
         
     bmp.loadData("lena.bmp");
@@ -128,8 +129,8 @@ void TestPoolLayer() {
     vector<double> input;
     vector<double> output;
     
-    ConvLayer *cl = new ConvLayer(128, 3, 1, 4, 9, 1, &sigmoid, 0.0005, 0.9);
-    PoolLayer *pl = new PoolLayer(128, 1, 1, 3, &id);
+    ConvLayer *cl = new ConvLayer(128, 3, 1, 4, 9, 1, &sigmoid, 0.0005, 0.9, 1.0);
+    PoolLayer *pl = new PoolLayer(128, 1, 1, 3, &id, 1.0);
     
     srand(time(NULL));
     net.SetInputSize(128*128*3);        
@@ -197,19 +198,19 @@ void TestDeepLearning(){
   
   srand(time(NULL));
   net.SetInputSize(32*32*3);
-  net.AppendLayer(new ConvLayer(32, 3, 1, 2, 5, 8, &rel, 0.01, 0.9));
-  net.AppendLayer(new PoolLayer(32, 8, 2, 2, &id));
-  net.AppendLayer(new ConvLayer(16, 8, 1, 2, 5, 16, &rel, 0.01, 0.9));
-  net.AppendLayer(new PoolLayer(16, 16, 2, 2, &id));
-  net.AppendLayer(new ConvLayer(8, 16, 1, 2, 5, 32, &rel, 0.01, 0.9));
-  net.AppendLayer(new PoolLayer(8, 32, 2, 2, &id));
+  net.AppendLayer(new ConvLayer(32, 3, 1, 2, 5, 8, &rel, 0.01, 0.9, 0.9));
+  net.AppendLayer(new PoolLayer(32, 8, 2, 2, &id, 0.5));
+  net.AppendLayer(new ConvLayer(16, 8, 1, 2, 5, 16, &rel, 0.01, 0.9, 0.5));
+  net.AppendLayer(new PoolLayer(16, 16, 2, 2, &id, 0.5));
+  net.AppendLayer(new ConvLayer(8, 16, 1, 2, 5, 32, &rel, 0.01, 0.9, 0.5));
+  net.AppendLayer(new PoolLayer(8, 32, 2, 2, &id, 0.5));
   /*
   net.AppendLayer(new ConvLayer(4, 24, 1, 2, 5, 32, &rel, 0.01, 0.9));
   net.AppendLayer(new PoolLayer(4, 32, 2, 2, &id));
   net.AppendLayer(new ConvLayer(2, 32, 1, 2, 5, 40, &rel, 0.01, 0.9));
   net.AppendLayer(new PoolLayer(2, 40, 2, 2, &id));    
   */
-  net.AppendLayer(new FullyConnectedLayer(4*4*32, 2, &softmax, 0.01, 0.9));
+  net.AppendLayer(new FullyConnectedLayer(4*4*32, 2, &softmax, 0.01, 0.9, 0.5));
   net.ConnectLayers();
 
 
@@ -364,11 +365,11 @@ void TestMNIST(){
 
   srand(time(NULL));
   net.SetInputSize(28*28);
-  net.AppendLayer(new ConvLayer(28, 1, 1, 2, 5, 8, &rel, 0.01, 0.9));
-  net.AppendLayer(new PoolLayer(28, 8, 2, 2, &id));
-  net.AppendLayer(new ConvLayer(14, 8, 1, 2, 5, 16, &rel, 0.01, 0.9));
-  net.AppendLayer(new PoolLayer(14, 16, 3, 3, &id));    
-  net.AppendLayer(new FullyConnectedLayer(5*5*16, 10, &softmax, 0.01, 0.9));
+  net.AppendLayer(new ConvLayer(28, 1, 1, 2, 5, 8, &rel, 0.01, 0.9, 0.9));
+  net.AppendLayer(new PoolLayer(28, 8, 2, 2, &id, 1.0));
+  net.AppendLayer(new ConvLayer(14, 8, 1, 2, 5, 16, &rel, 0.01, 0.9, 0.5));
+  net.AppendLayer(new PoolLayer(14, 16, 3, 3, &id, 1.0));    
+  net.AppendLayer(new FullyConnectedLayer(5*5*16, 10, &softmax, 0.01, 0.9, 0.5));
   net.ConnectLayers();
 
   /*
@@ -561,9 +562,9 @@ void TestMNIST(){
 }
 
 int main(){
-  //TestFullyConnectedLayer();
+  TestFullyConnectedLayer();
   //TestConvLayer();  
   //TestPoolLayer();
-  TestDeepLearning();
+  //TestDeepLearning();
   //TestMNIST();
 }
