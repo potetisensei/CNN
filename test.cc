@@ -3,6 +3,7 @@
 #include <cassert>
 #include <vector>
 #include <ctime>
+#include <random>
 #include "util.h"
 #include "neural_net.h"
 #include "fully_connected_layer.h"
@@ -18,45 +19,53 @@ using namespace std;
 void TestFullyConnectedLayer() {
     NeuralNet net;
     TangentSigmoid tanh;
+    LogisticSigmoid sigmoid;    
     Softmax softmax;
+    Identity id;    
     vector<double> input;
     vector<double> output;
 
     srand(time(NULL));
-    net.AppendLayer(new FullyConnectedLayer(3, &tanh, 0.0005));
-    net.AppendLayer(new FullyConnectedLayer(2, &tanh, 0.0005));
-    net.AppendLayer(new FullyConnectedLayer(3, &softmax, 0.0005));
+    net.SetInputSize(4);
+    net.AppendLayer(new ConvLayer(2, 1, 1, 0, 2, 4, &sigmoid, 0.1, 0.9));
+    net.AppendLayer(new PoolLayer(2, 4, 1, 1, &id));
+    net.AppendLayer(new ConvLayer(2, 4, 1, 0, 2, 16, &sigmoid, 0.1, 0.9));
+    net.AppendLayer(new PoolLayer(2, 16, 2, 2, &id));    
+    net.AppendLayer(new FullyConnectedLayer(16, 4, &softmax, 0.1, 0.9));
     net.ConnectLayers();
 
+    
     for (int j=0; j<10000; j++) {
         DoubleVector2d inputs;
         DoubleVector2d outputs;
 
-        inputs.resize(1);
-        outputs.resize(1);
-        input.resize(3, 0);
-        output.resize(3);
-        for (int i=0; i<3; i++) {
+        inputs.resize(2);
+        outputs.resize(2);
+        input.resize(4, 0);
+        output.resize(4);
+        for (int i=0; i<4; i++) {
             fill(input.begin(), input.end(), 0.0);
             fill(output.begin(), output.end(), 0.0);
             input[i] = 1.0;
             output[i] = 1.0;
             inputs[0] = input;
+            inputs[1] = input;
             outputs[0] = output;
+            outputs[1] = output;
             net.TrainNetwork(inputs, outputs);
             printf("%d: \n", j);
             printf("input: ");
-            for (int k=0; k<3; k++) {
+            for (int k=0; k<4; k++) {
                 printf("%f ", input[k]);
             }puts("");
             printf("expect: ");
-            for (int k=0; k<3; k++) {
+            for (int k=0; k<4; k++) {
                 printf("%f ", output[k]);
             }
             puts("");
             net.PropagateLayers(input, output);
             printf("output: ");
-            for (int k=0; k<3; k++) {
+            for (int k=0; k<4; k++) {
                 printf("%f ", output[k]);
             }
             puts("");
@@ -72,11 +81,10 @@ void TestConvLayer() {
     Softmax softmax;
     vector<double> input;
     vector<double> output;
-    ConvLayer *cl = new ConvLayer(128, 3, 1, 9, 1, &sigmoid, 0.0005);
 
     srand(time(NULL));
-    net.AppendLayer(cl);
-    net.AppendLayer(new FullyConnectedLayer(128*128, &sigmoid, 0.0005));
+    net.SetInputSize(128*128*3);    
+    net.AppendLayer(new ConvLayer(128, 3, 1, 4, 9, 1, &sigmoid, 0.0005, 0.9));
     net.ConnectLayers();
         
     bmp.loadData("lena.bmp");
@@ -102,12 +110,13 @@ void TestConvLayer() {
     for (int i=0; i<128; i++) {
         for (int j=0; j<128; j++) {
             printf("%f ", output[i*128+j]);
-            int val = (int)(output[i*128 + j]*256/maxval);
+            int val = (int)(output[i*128 + j]*255/maxval);
             bmp.setColor(j, i, val, val, val);
         }puts("");
     }
     bmp.writeData("output.bmp");
 }
+
 
 void TestPoolLayer() {
     BitMapProcessor bmp;
@@ -115,15 +124,17 @@ void TestPoolLayer() {
     RectifiedLinear rel;
     LogisticSigmoid sigmoid;
     Softmax softmax;
+    Identity id;    
     vector<double> input;
     vector<double> output;
-    ConvLayer *cl = new ConvLayer(128, 3, 1, 9, 1, &sigmoid, 0.0005);
-    PoolLayer *pl = new PoolLayer(128, 1, 1, 3);
+    
+    ConvLayer *cl = new ConvLayer(128, 3, 1, 4, 9, 1, &sigmoid, 0.0005, 0.9);
+    PoolLayer *pl = new PoolLayer(128, 1, 1, 3, &id);
     
     srand(time(NULL));
+    net.SetInputSize(128*128*3);        
     net.AppendLayer(cl);
     net.AppendLayer(pl);
-    net.AppendLayer(new FullyConnectedLayer(128*128, &sigmoid, 0.0005));
     net.ConnectLayers();
         
     bmp.loadData("lena.bmp");
@@ -160,9 +171,9 @@ void TestPoolLayer() {
 void TestDeepLearning(){
 
   mt19937 mt( time( NULL ) );
-  int MAX_FILE = 12499;
+  int MAX_FILE = 12500;
   char filename[256];
-  int LOOP_N = 100;//25000-2;//1000;
+  int LOOP_N = 1000;
   int namonakiacc = 0;
   vector<double> in, out;
   DoubleVector2d ins, outs;
@@ -174,73 +185,136 @@ void TestDeepLearning(){
   RectifiedLinear rel;
   LogisticSigmoid sigmoid;
   Softmax softmax;
-  
-  ConvLayer *conv1 = new ConvLayer(64, 3, 2, 5, 8, &sigmoid, 0.00005);
-  PoolLayer *pool1 = new PoolLayer(32, 8, 2, 3);
-  ConvLayer *conv2 = new ConvLayer(16, 8, 2, 5, 16, &sigmoid, 0.00005);
-  PoolLayer *pool2 = new PoolLayer(8, 16, 4, 3);
-  FullyConnectedLayer *full1 = new FullyConnectedLayer(2*2*16, &softmax, 0.00005);
-  FullyConnectedLayer *full2 = new FullyConnectedLayer(2, &sigmoid, 0.00005);
-  
+  Identity id;
 
+  /*
+  net.SetInputSize(128*128*3);
+  net.AppendLayer(new ConvLayer(128, 3, 1, 1, 3, 8, &sigmoid, 0.01, 0.9));
+  net.AppendLayer(new PoolLayer(128, 8, 2, 2, &id));
+  net.AppendLayer(new FullyConnectedLayer(64*64*8, 2, &softmax, 0.01, 0.9));
+  net.ConnectLayers();
+  */
+  
   srand(time(NULL));
-  net.AppendLayer(conv1);
-  net.AppendLayer(pool1);
-  net.AppendLayer(conv2);
-  net.AppendLayer(pool2);
-  net.AppendLayer(full1);
-  net.AppendLayer(full2);  
+  net.SetInputSize(32*32*3);
+  net.AppendLayer(new ConvLayer(32, 3, 1, 2, 5, 8, &rel, 0.01, 0.9));
+  net.AppendLayer(new PoolLayer(32, 8, 2, 2, &id));
+  net.AppendLayer(new ConvLayer(16, 8, 1, 2, 5, 16, &rel, 0.01, 0.9));
+  net.AppendLayer(new PoolLayer(16, 16, 2, 2, &id));
+  net.AppendLayer(new ConvLayer(8, 16, 1, 2, 5, 32, &rel, 0.01, 0.9));
+  net.AppendLayer(new PoolLayer(8, 32, 2, 2, &id));
+  /*
+  net.AppendLayer(new ConvLayer(4, 24, 1, 2, 5, 32, &rel, 0.01, 0.9));
+  net.AppendLayer(new PoolLayer(4, 32, 2, 2, &id));
+  net.AppendLayer(new ConvLayer(2, 32, 1, 2, 5, 40, &rel, 0.01, 0.9));
+  net.AppendLayer(new PoolLayer(2, 40, 2, 2, &id));    
+  */
+  net.AppendLayer(new FullyConnectedLayer(4*4*32, 2, &softmax, 0.01, 0.9));
   net.ConnectLayers();
 
-  vector<double> testin;
-  pixels = stbi_load( "processed/dog.0.jpg" , &width , &height , &bpp , 0 );
-  for( int k = 0; k < 3; k++ )
-    for( int i = 0; i < height; i++ )
-      for( int j = 0; j < width; j++ )
-	testin.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
-  
-  for (int o=0; o<1000; o++) {
-      for( int loop = 0; loop < LOOP_N; loop++ ){
-        in.clear();
-        out.clear();
+
+  int bloop = 0;
+  while( ++bloop ){
+    cerr << bloop << endl;
+    for( int loop = 0; loop < 100; loop++ ){
+      in.clear();
+      out.clear();
+
+      int img_n = mt()%10000;
       
-        if( /*mt()*/loop % 2 == 0 ){
-          out.push_back( 1.0 ); out.push_back( 0.0 );
-          sprintf( filename , "processed/cat.%d.jpg" , loop/2/*mt()%MAX_FILE*/ );
-        } else {
-          out.push_back( 0.0 ); out.push_back( 1.0 );
-          sprintf( filename , "processed/dog.%d.jpg" , loop/2/*mt()%MAX_FILE*/ );
-        }
-      
-        pixels = stbi_load( filename , &width , &height , &bpp , 0 );
-    
-        for( int k = 0; k < 3; k++ )
-          for( int i = 0; i < height; i++ )
-    	for( int j = 0; j < width; j++ )
-    	  in.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
-    
-        ins.clear();
-        ins.push_back( in );
-        outs.clear();
-        outs.push_back( out );
-    
-        net.TrainNetwork(ins, outs);
-        vector<double> out2(2);
-    
-        net.PropagateLayers( testin , out2 );
-    
-        cout << filename << endl;
-        cout << "o: " << out2[0] << " " << out2[1] << endl;
-        /*if (out2[0] > 0.3) {
-            conv1->learning_rate_ = 0.000005;
-            conv1->learning_rate_ = 0.000005;
-            full1->learning_rate_ = 0.000005;
-            full2->learning_rate_ = 0.000005;
-        }*/
-            
-        cout << endl;
+      if( mt() % 2 == 0 ){
+	out.push_back( 1.0 ); out.push_back( 0.0 );
+	sprintf( filename , "processed/cat.%d.jpg" , img_n );
+      } else {
+	out.push_back( 0.0 ); out.push_back( 1.0 );
+	sprintf( filename , "processed/dog.%d.jpg" , img_n );
       }
+      
+      pixels = stbi_load( filename , &width , &height , &bpp , 0 );
+    
+      for( int k = 0; k < 3; k++ )
+	for( int i = 0; i < height; i++ )
+	  for( int j = 0; j < width; j++ )
+	    in.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
+
+      stbi_image_free (pixels);      
+    
+      ins.clear();
+      ins.push_back( in );
+      outs.clear();
+      outs.push_back( out );
+    
+      net.TrainNetwork(ins, outs);
+      vector<double> out2(2);
+    }
+
+    namonakiacc = 0;
+    for( int loop = 0; loop < 100; loop++ ){
+      in.clear();
+      out.clear(); out.resize(2);
+      int ans;
+
+      int img_n = 10000 + mt()%2500;      
+      
+      if( mt() % 2 == 0 ){
+	ans = 0;
+	sprintf( filename , "processed/cat.%d.jpg" , img_n );
+      } else {
+	ans = 1;
+	sprintf( filename , "processed/dog.%d.jpg" , img_n );
+      }
+      
+      pixels = stbi_load( filename , &width , &height , &bpp , 0 );
+    
+      for( int k = 0; k < 3; k++ )
+	for( int i = 0; i < height; i++ )
+	  for( int j = 0; j < width; j++ )
+	    in.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
+
+      stbi_image_free (pixels);      
+
+      net.PropagateLayers( in , out );
+
+      int res = 0;
+      if( out[0] < out[1] ) res = 1;
+
+      if( res == ans ) namonakiacc++;
+    }
+    cerr << "ac : " << namonakiacc << " / 100" << endl;
+
+    FILE *fp = fopen( "stop_f" , "r" );
+    int stop_f;
+    fscanf( fp , "%d" , &stop_f );
+    if( stop_f == 1 ) break;
+    fclose( fp );
   }
+
+  printf( "id,label\n" );
+  for( int loop = 1; loop <= 12500; loop++ ){
+    cerr << loop << " / 12500" << endl;
+    in.clear();
+    out.clear(); out.resize(2);
+    int ans;
+      
+    sprintf( filename , "processedtest/%d.jpg" , loop );
+      
+    pixels = stbi_load( filename , &width , &height , &bpp , 0 );
+    
+    for( int k = 0; k < 3; k++ )
+      for( int i = 0; i < height; i++ )
+	for( int j = 0; j < width; j++ )
+	  in.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
+
+    stbi_image_free (pixels);      
+
+    net.PropagateLayers( in , out );
+
+    int res = 0;
+    if( out[0] < out[1] ) res = 1;
+
+    printf( "%d,%d\n" , loop , res );
+  }
+  
 }
 
 
@@ -263,6 +337,8 @@ int tlabel[60000];
 
 void TestMNIST(){
 
+  mt19937 mt( time(NULL) );
+  
   int magic_number;
   int N, Nt, Nl, H, W;
   
@@ -277,22 +353,23 @@ void TestMNIST(){
   Softmax softmax;
   Identity id;
 
-  ConvLayer *conv1 = new ConvLayer(28, 1, 1, 5, 8, &rel, 0.01);
-  PoolLayer *pool1 = new PoolLayer(28, 8, 2, 2);
-  ConvLayer *conv2 = new ConvLayer(14, 8, 1, 5, 16, &rel, 0.01);
-  PoolLayer *pool2 = new PoolLayer(14, 16, 3, 3);
-  FullyConnectedLayer *full1 = new FullyConnectedLayer(5*5*16, &softmax, 0.01);
-  FullyConnectedLayer *full2 = new FullyConnectedLayer(10, &sigmoid, 0.01);
+  /*
+  srand(time(NULL));
+  net.SetInputSize(28*28);
+  net.AppendLayer(new ConvLayer(28, 1, 1, 2, 5, 8, &sigmoid, 0.01, 0.9));
+  net.AppendLayer(new PoolLayer(28, 8, 2, 2, &id));
+  net.AppendLayer(new FullyConnectedLayer(14*14*8, 10, &softmax, 0.01, 0.9));
+  net.ConnectLayers();
+  */
 
   srand(time(NULL));
-  net.AppendLayer(conv1);
-  net.AppendLayer(pool1);
-  net.AppendLayer(conv2);
-  net.AppendLayer(pool2);
-  net.AppendLayer(full1);
-  net.AppendLayer(full2);  
+  net.SetInputSize(28*28);
+  net.AppendLayer(new ConvLayer(28, 1, 1, 2, 5, 8, &rel, 0.01, 0.9));
+  net.AppendLayer(new PoolLayer(28, 8, 2, 2, &id));
+  net.AppendLayer(new ConvLayer(14, 8, 1, 2, 5, 16, &rel, 0.01, 0.9));
+  net.AppendLayer(new PoolLayer(14, 16, 3, 3, &id));    
+  net.AppendLayer(new FullyConnectedLayer(5*5*16, 10, &softmax, 0.01, 0.9));
   net.ConnectLayers();
-
 
   /*
   FullyConnectedLayer *full1 = new FullyConnectedLayer(28*28, &sigmoid, 0.1);
@@ -397,22 +474,23 @@ void TestMNIST(){
 
   fclose( fp );
   
-
   int lloop = 0;
   int tloop = 0;
-  int loop_n = 100;
+  int loop_n = 1000;
 
   for( int loop = 1; loop < loop_n; loop++ ){
-    cout << loop << " / " << loop_n << endl;
+    cerr << loop << " / " << loop_n << endl;    
     for( ; lloop < 100*loop; lloop++ ){
       in.clear();
       out = vector<double>(10,0.0);
 
+      int lnum = mt()%Nl;
+
       for( int i = 0; i < H; i++ )
 	for( int j = 0; j < W; j++ )
-	  in.push_back( limg[lloop%Nl][i*W+j] );
+	  in.push_back( limg[lnum][i*W+j] );
 
-      out[ llabel[lloop%Nl] ] = 1.0;
+      out[ llabel[lnum] ] = 1.0;
 
       ins.clear();
       ins.push_back( in );
@@ -424,13 +502,15 @@ void TestMNIST(){
 
 
     namonakiacc = 0;
-    for( ; tloop < 100*loop; tloop++ ){
+    for( ; tloop < 1000*loop; tloop++ ){
       in.clear();
       out = vector<double>(10,0.0);
 
+      int tnum = mt()%Nt;
+
       for( int i = 0; i < H; i++ )
 	for( int j = 0; j < W; j++ )
-	  in.push_back( timg[tloop%Nt][i*W+j] );
+	  in.push_back( timg[tnum][i*W+j] );
 
       net.PropagateLayers( in , out );
 
@@ -438,14 +518,21 @@ void TestMNIST(){
       for( int i = 1; i < 10; i++ )
 	if( out[res] < out[i] ) res = i;
 
-      if( res == tlabel[tloop%Nt] ) namonakiacc++;
+#if DEBUG
+      printf( "out : %d, ans : %d\n" , res , tlabel[tloop%Nt] );
+      for( int i = 0; i < 10; i++ )
+	printf( "%lf " , out[i] );
+      printf( "\n" );
+#endif
+      
+      if( res == tlabel[tnum] ) namonakiacc++;
     }
 
-    cout << "ac : " << namonakiacc << " / " << 100 << endl;
+    cerr << "ac : " << namonakiacc << " / " << 1000 << endl;
 
     if( loop == loop_n-1 ){
       int addc = 0;
-      printf( "addc : " );
+      cerr << "addc : ";
       scanf( "%d" , &addc );
       loop_n += addc;
     }
@@ -473,11 +560,10 @@ void TestMNIST(){
   
 }
 
-
-
 int main(){
   //TestFullyConnectedLayer();
+  //TestConvLayer();  
   //TestPoolLayer();
-  //TestDeepLearning();
-  TestMNIST();
+  TestDeepLearning();
+  //TestMNIST();
 }

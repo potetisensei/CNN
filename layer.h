@@ -9,24 +9,20 @@ using namespace std;
 
 class Layer {
 public:
-    Layer() : calculated_(false), f_(&id_) {}
-    Layer(double rate, ActivationFunction *f) 
-        : calculated_(false), learning_rate_(rate), f_(f) {}
-    virtual ~Layer() {}
-    virtual void ConnectLayer(Layer *layer) { assert(0); }
-    virtual void CalculateOutput(Layer *layer);
-    virtual void Propagate(Layer *layer) { assert(0); }
-    virtual void BackPropagate(DoubleVector2d next_deltas, ActivationFunction *f) { assert(0); }
-    virtual void UpdateWeight(DoubleVector2d deltas) { assert(0); }
-    virtual void UpdateBias(DoubleVector2d deltas) { assert(0); }
+    Layer() : f_(NULL) {}
+    Layer(ActivationFunction *f) : f_(f) {}
 
-    bool calculated_;
-    vector<struct Neuron> neurons_; // think as 1d even if Layer has 2d or 3d neurons
-    DoubleVector2d deltas_; // [sample_idx][neuron_idx] 
+    virtual ~Layer() {}
+    virtual void CheckInputUnits(vector<struct Neuron> const &units) { assert(0); }
+    virtual void ArrangeOutputUnits(vector<struct Neuron> &units) { assert(0); }
+    virtual void ConnectNeurons(vector<struct Neuron> const &input, vector<struct Neuron> const &output) { assert(0); }
+    virtual void CalculateOutputUnits(vector<struct Neuron> &units) { assert(0); }
+    virtual void Propagate(vector<struct Neuron> const &input, vector<struct Neuron> &output) { assert(0); }
+    virtual void BackPropagate(vector<struct Neuron> const &input, vector<double> const &next_delta, ActivationFunction *f, vector<double> &delta) { assert(0); }
+    virtual void UpdateLazySubtrahend(vector<struct Neuron> const &input, const vector<double> &next_delta) { assert(0); }
+    virtual void ApplyLazySubtrahend() { assert(0); }
+
     ActivationFunction *f_;
-public:
-    double learning_rate_;
-    Identity id_;
 };
 
 #endif

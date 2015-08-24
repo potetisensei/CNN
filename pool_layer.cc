@@ -1,47 +1,97 @@
 #include "pool_layer.h"
 #include "iostream"
 
-PoolLayer::PoolLayer(int breadth_neuron, int num_channels, int stride, int breadth_filter)
-    : breadth_neuron_(breadth_neuron), 
+PoolLayer::PoolLayer(
+  int breadth_neuron, 
+  int num_channels, 
+  int stride, 
+  int breadth_filter,
+  ActivationFunction *f )
+    : neuron_connected_(false),
+      propagated_(false),
+      breadth_neuron_(breadth_neuron), 
       stride_(stride),
       breadth_filter_(breadth_filter),
-      num_channels_(num_channels){
-    breadth_output_ = (breadth_neuron-1)/stride + 1;
-    neurons_.resize( breadth_neuron * breadth_neuron * num_channels );
-    maxid.resize(breadth_output_ * breadth_output_ * num_channels_);
+      num_channels_(num_channels),
+      Layer(f){
+  int num_input;
+  int num_output;
+
+  breadth_output_ = (breadth_neuron-1)/stride + 1;
+
+  num_input = breadth_neuron * breadth_neuron;
+  assert(num_input / breadth_neuron == breadth_neuron);
+  num_input *= num_channels;
+  assert(num_input / num_channels == breadth_neuron * breadth_neuron);
+  num_input_ = num_input;
+
+  num_output =breadth_output_ * breadth_output_;
+  assert(num_output / breadth_output_ == breadth_output_);
+  num_output *= num_channels;
+  assert(num_output / num_channels == breadth_output_ * breadth_output_);
+  num_output_ = num_output;
 }
 
-void PoolLayer::CalculateOutput(Layer *layer) {
-    vector<struct Neuron> &neurons = layer->neurons_;
-
-    assert(!layer->calculated_);
-    for (int i=0; i<neurons.size(); i++) {
-      neurons[i].z = neurons[i].u;
-    }
-    layer->calculated_ = true;
+void PoolLayer::CheckInputUnits(vector<struct Neuron> const &units) {
+  assert(units.size() == num_input_);
 }
 
-void PoolLayer::ConnectLayer(Layer *layer){
-  assert( breadth_output_*breadth_output_*num_channels_ == layer->neurons_.size() );
+void PoolLayer::ArrangeOutputUnits(vector<struct Neuron> &units) {
+  units.resize(num_output_);
 }
 
-void PoolLayer::Propagate(Layer *layer){
-  vector<struct Neuron> &output_neurons = layer->neurons_;
-  int size = breadth_output_ * breadth_output_;
-  int size2 = breadth_neuron_ * breadth_neuron_;
+void PoolLayer::ConnectNeurons(
+    vector<struct Neuron> const &input,
+    vector<struct Neuron> const &output) {
+  assert(!neuron_connected_);
+  assert(input.size() == num_input_);
+  assert(output.size() == num_output_);
 
-  assert(calculated_);
+  maxid.resize(num_output_);
 
-  for (int i=0; i<output_neurons.size(); i++) {
-    output_neurons[i].u = 0.0;
-  }
+  neuron_connected_ = true;
+}
+
+void PoolLayer::CalculateOutputUnits(vector<struct Neuron> &units) {
+  assert(units.size() == num_output_);
+
+  double outputmax = -1000;
+  double outputmin = 1000;
   
-  assert(maxid.size() == num_channels_*size);
+  for (int i=0; i<num_output_; i++) {
+    units[i].z = f_->Calculate(units[i].u, units);
+
+    outputmax = max( outputmax , units[i].z );
+    outputmin = min( outputmin , units[i].z );    
+  }
+
+#if debug
+  printf( "poolsig : %lf %lf\n" , outputmax , outputmin );
+#endif
+}
+
+void PoolLayer::Propagate(
+			  vector<struct Neuron> const &input,
+			  vector<struct Neuron> &output) {
+  int area_output = breadth_output_ * breadth_output_;
+  int area_input = breadth_neuron_ * breadth_neuron_;
+
+  assert(input.size() == num_input_);
+  assert(output.size() == num_output_);
+
+  double outputmax = -1000;
+  double outputmin = 1000;
+  
+  for (int i=0; i<num_output_; i++) {
+    output[i].u = 0.0;
+  }
+
+  assert(maxid.size() == num_output_);
   for (int i=0; i<breadth_output_; i++) {
     for (int j=0; j<breadth_output_; j++) {
       for (int k=0; k<num_channels_; k++) {
-        int neuron_idx = k*size + i*breadth_output_ + j;
-	    double maxv = -numeric_limits<double>::max();
+        int output_idx = k*area_output + i*breadth_output_ + j;
+        double maxv = -numeric_limits<double>::max();
 
         assert(j*stride_ < breadth_neuron_);
         assert(i*stride_ < breadth_neuron_);
@@ -49,45 +99,78 @@ void PoolLayer::Propagate(Layer *layer){
     	for (int p=0; p<breadth_filter_; p++) {
 	      for (int q=0; q<breadth_filter_; q++) {
     	    int x = j*stride_+q;
-	        int y = i*stride_+p;
-	        double z = -numeric_limits<double>::max();
-            int neuron_idx2 = k*size2 + y*breadth_neuron_ + x;
+            int y = i*stride_+p;
+            double z = -numeric_limits<double>::max();
+            int input_idx = k*area_input + y*breadth_neuron_ + x;
 
 	        if (x < breadth_neuron_ && y < breadth_neuron_) {
-	          z = neurons_[neuron_idx2].z;
+              z = input[input_idx].z;
             }
 
     	    if (maxv < z) {
 	          maxv = z;
-	          maxid[neuron_idx] = neuron_idx2;
+              maxid[output_idx] = input_idx;
 	        }
           }
-	    }
+        }
 
-   	    assert(maxv != -numeric_limits<double>::max());
-	    output_neurons[neuron_idx].u = maxv;
-	  }
+	    assert(maxv != -numeric_limits<double>::max());
+	    output[output_idx].u = maxv;
+
+	    outputmax = max( outputmax , maxv );
+	    outputmin = min( outputmin , maxv );
+      }
     }
   }
 
-  layer->calculated_ = false;
+#if DEBUG
+  printf( "pool : %lf %lf\n" , outputmax , outputmin );
+#endif
+  
+  propagated_ = true;
 }
 
+void PoolLayer::BackPropagate(
+    vector<struct Neuron> const &input,
+    vector<double> const &next_delta,
+    ActivationFunction *f,
+    vector<double> &delta) {
+  assert(propagated_);
+  assert(input.size() == num_input_);
+  assert(next_delta.size() == num_output_);
+  assert(maxid.size() == num_output_);
 
-void PoolLayer::BackPropagate(DoubleVector2d next_deltas, ActivationFunction *f) {
-  double deltamax = -1000;
-  double deltamin = 1000;
-  deltas_.resize(next_deltas.size());
-  for (int i=0; i<next_deltas.size(); i++) {
-    deltas_[i].resize(neurons_.size());
-    fill(deltas_[i].begin(), deltas_[i].end(), 0.0);
-
-    for (int j=0; j<next_deltas[i].size(); j++) {
-      deltas_[i][maxid[j]] += next_deltas[i][j] * f->CalculateDerivative(neurons_[maxid[j]].u);
-      deltamax = max( deltamax , deltas_[i][maxid[j]] );
-      deltamin = min( deltamin , deltas_[i][maxid[j]] );
-    }
+  delta.resize(num_input_);
+  for (int i=0; i<num_input_; i++) {
+    delta[i] = 0.0;
   }
 
-  //printf( "pooldelta : %lf %lf\n" , deltamax , deltamin );
+  double deltamax = -1000;
+  double deltamin = 1000;
+  
+  for (int i=0; i<num_output_; i++) {
+    delta[maxid[i]] += next_delta[i] * f->CalculateDerivative(input[maxid[i]].u);
+
+    deltamax = max( deltamax , delta[maxid[i]] );
+    deltamin = min( deltamin , delta[maxid[i]] );
+  }
+
+#if DEBUG
+  printf( "pooldelta : %lf %lf\n" , deltamax , deltamin );
+#endif
+  
+  propagated_ = false;
+}
+
+void PoolLayer::UpdateLazySubtrahend(
+    vector<struct Neuron> const &input,
+    const vector<double> &next_delta) {
+  assert(input.size() == num_input_);
+  assert(next_delta.size() == num_output_);
+
+  // do nothing
+}
+
+void PoolLayer::ApplyLazySubtrahend() {
+  // do nothing
 }

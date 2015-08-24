@@ -11,7 +11,7 @@ using namespace std;
 
 class ActivationFunction {
 public:
-    virtual double Calculate(double u, vector<struct Neuron> &neurons) {
+    virtual double Calculate(double u, vector<struct Neuron> const &neurons) {
         return -numeric_limits<double>::max();
     }
 
@@ -22,7 +22,7 @@ public:
 
 class LogisticSigmoid : public ActivationFunction {
 public:
-    virtual double Calculate(double u, vector<struct Neuron> &neurons) {
+    virtual double Calculate(double u, vector<struct Neuron> const &neurons) {
         return 1/(1 + exp(-u));
     }
 
@@ -34,7 +34,7 @@ public:
 
 class TangentSigmoid : public ActivationFunction {
 public:
-    virtual double Calculate(double u, vector<struct Neuron> &neurons) {
+    virtual double Calculate(double u, vector<struct Neuron> const &neurons) {
         return tanh(u);
     }
 
@@ -45,7 +45,7 @@ public:
 
 class RectifiedLinear : public ActivationFunction {
 public:
-    virtual double Calculate(double u, vector<struct Neuron> &neurons) {
+    virtual double Calculate(double u, vector<struct Neuron> const &neurons) {
         return max(u, 0.0);
     }
 
@@ -57,7 +57,7 @@ public:
 
 class Identity : public ActivationFunction {
 public:
-    virtual double Calculate(double u, vector<struct Neuron> &neurons) {
+    virtual double Calculate(double u, vector<struct Neuron> const &neurons) {
         return u;
     }
 
@@ -68,8 +68,15 @@ public:
 
 class Softmax : public ActivationFunction {
 public:
-    virtual double Calculate(double u, vector<struct Neuron> &neurons) {
+    virtual double Calculate(double u, vector<struct Neuron> const &neurons) {
         double denominator = 0;
+
+	// overflow taisaku fix later
+	if( u > 30 ){
+	  for( int i = 0; i < neurons.size(); i++ )
+	    if( u+1 < neurons[i].u ) return 0;
+	  return 1;
+	}
 
         for (int i=0; i<neurons.size(); i++) {
             denominator += exp(neurons[i].u);
