@@ -13,7 +13,7 @@ PoolLayer::PoolLayer(
       stride_(stride),
       breadth_filter_(breadth_filter),
       num_channels_(num_channels),
-      Layer(f){
+      Layer(f) {
   int num_input;
   int num_output;
 
