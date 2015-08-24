@@ -88,8 +88,11 @@ void NeuralNet::TrainNetwork(DoubleVector2d &inputs, DoubleVector2d &expected_ou
 
     tmp.resize(last_neurons.size());
     assert(inputs.size() == expected_outputs.size());
-
     
+    for (int i=0; i<last_idx; i++) {
+        layers_[i]->ChooseDropoutUnits(all_neurons_[i]);
+    }
+
     for (int i=0; i<inputs.size(); i++) {
         PropagateLayers(inputs[i], tmp);
         BackPropagateLayers(expected_outputs[i]);
@@ -97,5 +100,11 @@ void NeuralNet::TrainNetwork(DoubleVector2d &inputs, DoubleVector2d &expected_ou
 
     for (int i=last_idx-1; i>=0; i--) {
         layers_[i]->ApplyLazySubtrahend();
+    }
+
+    for (int i=0; i<last_idx; i++) {
+        for (int j=0; j<all_neurons_[i].size(); j++) {
+            all_neurons_[i][j].is_chosen = true;
+        }
     }
 }

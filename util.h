@@ -17,6 +17,7 @@ typedef vector<DoubleVector3d> DoubleVector4d;
 struct Neuron {
     double u;
     double z;
+    bool is_chosen;
 };
 
 typedef vector<vector<struct Neuron> > NeuronVector2d;
@@ -26,7 +27,7 @@ typedef vector<NeuronVector3d> NeuronVector4d;
 
 struct Weight {
   double val; // weight
-  double lazy_sub; // sum of dEn/dWij in a mini-batch datasets
+  double lazy_sub; // sum of dEn/dWij of the datasets in one minibatch
   double gsum;
   int count; // number of mini-batch dataset
 };
@@ -34,7 +35,6 @@ struct Weight {
 typedef vector<vector<struct Weight> > WeightVector2d;
 typedef vector<WeightVector2d> WeightVector3d;
 typedef vector<WeightVector3d> WeightVector4d;
-
 
 inline double GenRandom(double fmin, double fmax) {
   double f = (double)rand() / RAND_MAX;

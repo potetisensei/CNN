@@ -9,13 +9,16 @@ using namespace std;
 
 class Layer {
 public:
-    Layer() : f_(NULL) {}
-    Layer(ActivationFunction *f) : f_(f) {}
+    Layer() : p_(1.0), f_(NULL) {}
+    Layer(double p, ActivationFunction *f) : p_(p), f_(f) {
+        assert(0.0 <= p && p <= 1.0);
+    }
 
     virtual ~Layer() {}
     virtual void CheckInputUnits(vector<struct Neuron> const &units) { assert(0); }
     virtual void ArrangeOutputUnits(vector<struct Neuron> &units) { assert(0); }
     virtual void ConnectNeurons(vector<struct Neuron> const &input, vector<struct Neuron> const &output) { assert(0); }
+    virtual void ChooseDropoutUnits(vector<struct Neuron> &input) { assert(0); }
     virtual void CalculateOutputUnits(vector<struct Neuron> &units) { assert(0); }
     virtual void Propagate(vector<struct Neuron> const &input, vector<struct Neuron> &output) { assert(0); }
     virtual void BackPropagate(vector<struct Neuron> const &input, vector<double> const &next_delta, ActivationFunction *f, vector<double> &delta) { assert(0); }
@@ -23,6 +26,8 @@ public:
     virtual void ApplyLazySubtrahend() { assert(0); }
 
     ActivationFunction *f_;
+private:
+    double p_;
 };
 
 #endif
