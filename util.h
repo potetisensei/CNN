@@ -7,6 +7,8 @@
 
 #define EPS 1e-8
 #define DEBUG 0
+#define MOMENTUM 0
+#define ADAGRAD 1
 
 using namespace std;
 

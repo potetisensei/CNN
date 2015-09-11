@@ -114,3 +114,19 @@ void NeuralNet::TrainNetwork(DoubleVector2d &inputs, DoubleVector2d &expected_ou
         layers_[i]->ApplyLazySubtrahend();
     }
 }
+
+void NeuralNet::Save(){
+  char filename[256];
+  for( int i = 0; i < layers_.size(); i++ ){
+    sprintf( filename , "dat/dat_%d" , i );
+    layers_[i]->Save( filename );
+  }
+}
+
+void NeuralNet::Load(){
+  char filename[256];
+  for( int i = 0; i < layers_.size(); i++ ){
+    sprintf( filename , "dat/dat_%d" , i );
+    layers_[i]->Load( filename );
+  }
+}

@@ -28,6 +28,9 @@ class PoolLayer : public Layer {
     virtual void UpdateLazySubtrahend(vector<struct Neuron> const &input, const vector<double> &next_delta);
     virtual void ApplyLazySubtrahend();
 
+    virtual void Save( char *s );
+    virtual void Load( char *s );
+    
 private:
     bool neuron_connected_;
     bool propagated_;

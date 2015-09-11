@@ -20,6 +20,8 @@ public:
     void BackPropagateLayers(vector<double> &expected);
     void TrainNetwork(DoubleVector2d &inputs, DoubleVector2d &expected_outputs);
 
+    void Save();
+    void Load();
 private:
     bool layer_connected_;
     vector<Layer*> layers_;

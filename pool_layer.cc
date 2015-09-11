@@ -98,28 +98,28 @@ void PoolLayer::Propagate(
         assert(i*stride_ < breadth_neuron_);
 
     	for (int p=0; p<breadth_filter_; p++) {
-	      for (int q=0; q<breadth_filter_; q++) {
+	  for (int q=0; q<breadth_filter_; q++) {
     	    int x = j*stride_+q;
             int y = i*stride_+p;
             double z = -numeric_limits<double>::max();
             int input_idx = k*area_input + y*breadth_neuron_ + x;
 
-	        if (x < breadth_neuron_ && y < breadth_neuron_) {
+	    if (x < breadth_neuron_ && y < breadth_neuron_) {
               z = input[input_idx].z;
             }
 
     	    if (maxv < z) {
-	          maxv = z;
+	      maxv = z;
               maxid[output_idx] = input_idx;
-	        }
+	    }
           }
         }
 
-	    assert(maxv != -numeric_limits<double>::max());
-	    output[output_idx].u = maxv;
+	assert(maxv != -numeric_limits<double>::max());
+	output[output_idx].u = maxv;
 
-	    outputmax = max( outputmax , maxv );
-	    outputmin = min( outputmin , maxv );
+	outputmax = max( outputmax , maxv );
+	outputmin = min( outputmin , maxv );
       }
     }
   }
@@ -173,5 +173,14 @@ void PoolLayer::UpdateLazySubtrahend(
 }
 
 void PoolLayer::ApplyLazySubtrahend() {
+  // do nothing
+}
+
+void PoolLayer::Save( char *s ) {
+  // do nothing
+}
+
+
+void PoolLayer::Load( char *s ) {
   // do nothing
 }

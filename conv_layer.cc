@@ -58,12 +58,12 @@ void ConvLayer::ConnectNeurons(
     w.val = GenRandom(0, 0.1);
     w.lazy_sub = 0.0;
     w.count = 0;
-    w.gsum = EPS;
+    w.gsum = 0.0;
     biases_[i] = w;
   }
 
 
-  double lim = 1.0 / sqrt( num_channels_*breadth_filter_*breadth_filter_ );
+  double lim = 1.0 / ( num_channels_*breadth_filter_*breadth_filter_ ); //1.0 / sqrt( num_channels_*breadth_filter_*breadth_filter_ );
   weights_.resize(num_filters_);
   for (int m=0; m<num_filters_; m++) {
     weights_[m].resize(num_channels_);
@@ -77,7 +77,7 @@ void ConvLayer::ConnectNeurons(
           w.val = GenRandom(0, lim);
           w.lazy_sub = 0.0;
           w.count = 0;
-	  w.gsum = EPS;	  
+	  w.gsum = 0.0;	  
           weights_[m][k][i][j] = w;
         }
       }
@@ -124,7 +124,7 @@ void ConvLayer::Propagate(
 
   double outputmax = -1000;
   double outputmin = 1000;
-  
+
   assert(biases_.size() == num_filters_);
   assert(weights_.size() == num_filters_);
   for (int m=0; m<num_filters_; m++) { 
@@ -145,27 +145,26 @@ void ConvLayer::Propagate(
               int x = j*stride_ - padding_ + q;
               int y = i*stride_ - padding_ + p;
               int input_idx = k*area_input + y*breadth_neuron_ + x;
-              double z = 0.0;
 
               // Fix the way of padding
-              if ( 0 <= x && x < breadth_neuron_ && 0 <= y && y < breadth_neuron_) {
+              if ( 0 <= x && x < breadth_neuron_ && 0 <= y && y < breadth_neuron_ ) {
                 assert(input_idx < input.size());
-                z = input[input_idx].z;
+		sum_conv += input[input_idx].z * weights_[m][k][p][q].val;
               }
-              sum_conv += z * weights_[m][k][p][q].val;
+
             }
           }
         }
 
         assert(output_idx < output.size());
         output[output_idx].u = sum_conv + biases_[m].val;
-
-	    outputmax = max( outputmax, output[output_idx].u );
-	    outputmin = min( outputmin, output[output_idx].u );		
+	
+	outputmax = max( outputmax, output[output_idx].u );
+	outputmin = min( outputmin, output[output_idx].u );		
       }
     }
   }
-
+  
 #if DEBUG
   printf( "conv : %lf %lf\n" , outputmax , outputmin );
 #endif
@@ -176,6 +175,7 @@ void ConvLayer::BackPropagate(
     vector<double> const &next_delta, 
     ActivationFunction *f,
     vector<double> &delta) {
+
   int area_output = breadth_output_ * breadth_output_;
   int area_input = breadth_neuron_ * breadth_neuron_;
 
@@ -210,16 +210,13 @@ void ConvLayer::BackPropagate(
               int y = i*stride_ - padding_ + p;
               int input_idx = k*area_input + y*breadth_neuron_ + x;
     
-              if ( 0 <= x && x < breadth_neuron_ && 0 <= y && y < breadth_neuron_) {
+              if ( 0 <= x && x < breadth_neuron_ && 0 <= y && y < breadth_neuron_ && input[input_idx].u > 0) {
+		assert( 0 <= input_idx && input_idx < delta.size() );
 
-		        assert( 0 <= input_idx && input_idx < delta.size() );
                 delta[input_idx] += 
                   next_delta[output_idx] * 
-                  weights_[m][k][p][q].val * 
-                  f->CalculateDerivative(input[input_idx].u);
+                  weights_[m][k][p][q].val;
 
-		        deltamax = max( deltamax , delta[input_idx] );
-		        deltamin = min( deltamin , delta[input_idx] );		
     	      }
             }
           }
@@ -228,7 +225,12 @@ void ConvLayer::BackPropagate(
     }
   }
 
+
 #if DEBUG
+  for( int i = 0; i < delta.size(); i++ ){
+    deltamax = max( deltamax , delta[i] );
+    deltamin = min( deltamin , delta[i] );
+  }
   printf( "convdelta : %lf %lf\n" , deltamax , deltamin );
 #endif
 }
@@ -241,6 +243,7 @@ void ConvLayer::UpdateLazySubtrahend(
   
   assert(input.size() == num_input_);
   assert(next_delta.size() == num_output_);
+
 
   assert(weights_.size() == num_filters_);
   for (int m=0; m<num_filters_; m++) {
@@ -266,9 +269,11 @@ void ConvLayer::UpdateLazySubtrahend(
 	      int input_idx = k*area_input + y*breadth_neuron_ + x;
 
 	      if (0 <= x && x < breadth_neuron_ && 0 <= y && y < breadth_neuron_) {
-              
+
+#if DEBUG
                 assert(output_idx < next_delta.size());
                 assert(input_idx < input.size());
+#endif
                 w.lazy_sub += 
                   next_delta[output_idx] * 
                   input[input_idx].z;
@@ -279,6 +284,7 @@ void ConvLayer::UpdateLazySubtrahend(
       }
     }
   }
+
 
   assert(biases_.size() == num_filters_);
   for (int m=0; m<num_filters_; m++) {
@@ -296,10 +302,10 @@ void ConvLayer::UpdateLazySubtrahend(
     }
   }
 
-  //printf( "bias : %lf\n" , maxbias );
 }
                 
 void ConvLayer::ApplyLazySubtrahend() {
+
   assert(weights_.size() == num_filters_);
   for (int m=0; m<num_filters_; m++) {
     assert(weights_[m].size() == num_channels_);
@@ -312,15 +318,14 @@ void ConvLayer::ApplyLazySubtrahend() {
 
           assert(w.count > 0);
 
-	  /* momentum 
+	  if( MOMENTUM ){
 	     double prevdelta = - w.lazy_sub * learning_rate_ / w.count + momentum_ * w.gsum;
 	     w.val += prevdelta;
 	     w.gsum = prevdelta;
-	  */
-
-	  w.gsum += (w.lazy_sub / w.count) * (w.lazy_sub / w.count);
-	  w.val -= learning_rate_ / sqrt( w.gsum ) * w.lazy_sub / w.count;
-
+	  } else if( ADAGRAD ){
+	    w.gsum += (w.lazy_sub / w.count) * (w.lazy_sub / w.count);
+	    w.val -= learning_rate_ / ( sqrt( w.gsum ) + 1.0 ) * w.lazy_sub / w.count;
+	  }
 	  
           w.lazy_sub = 0.0;
           w.count = 0;
@@ -336,16 +341,72 @@ void ConvLayer::ApplyLazySubtrahend() {
 
     assert(w.count > 0);
 
-    /* momentum 
+    if( MOMENTUM ){
        double prevdelta = - w.lazy_sub * learning_rate_ / w.count + momentum_ * w.gsum;
        w.val += prevdelta;
        w.gsum = prevdelta;
-    */
-
-    w.gsum += (w.lazy_sub / w.count) * (w.lazy_sub / w.count);
-    w.val -= learning_rate_ / sqrt( w.gsum ) * w.lazy_sub / w.count;
+    } else if( ADAGRAD ){
+      w.gsum += (w.lazy_sub / w.count) * (w.lazy_sub / w.count);
+      w.val -= learning_rate_ / ( sqrt( w.gsum ) + 1.0 ) * w.lazy_sub / w.count;
+    }
     
     w.lazy_sub = 0.0;
     w.count = 0;
   }
+
+}
+
+
+void ConvLayer::Save( char *s ){
+  FILE *fp = fopen( s , "w" );
+  assert( fp != NULL );  
+
+  assert( num_filters_ == biases_.size() );
+  for( int i=0; i<num_filters_; i++ )
+    fprintf( fp , "%lf %lf " , biases_[i].val , biases_[i].gsum );
+  fprintf( fp , "\n" );
+
+  assert( weights_.size() == num_filters_ );
+  for (int m=0; m<num_filters_; m++) {
+    assert( weights_[m].size() == num_channels_ );
+    for (int k=0; k<num_channels_; k++) {
+      assert( weights_[m][k].size() == breadth_filter_ );
+      for (int i=0; i<breadth_filter_; i++) {
+	assert( weights_[m][k][i].size() == breadth_filter_ );
+        for (int j=0; j<breadth_filter_; j++) {
+	  fprintf( fp , "%lf %lf " , weights_[m][k][i][j].val , weights_[m][k][i][j].gsum );
+        }
+      }
+      fprintf( fp , "\n" );
+    }
+  }
+  
+  fclose( fp );
+}
+
+void ConvLayer::Load( char *s ){
+  FILE *fp = fopen( s , "r" );
+  assert( fp != NULL );  
+
+  assert( num_filters_ == biases_.size() );
+  for( int i=0; i<num_filters_; i++ )
+    fscanf( fp , "%lf %lf" , &biases_[i].val , &biases_[i].gsum );
+
+
+  assert( weights_.size() == num_filters_ );
+  for (int m=0; m<num_filters_; m++) {
+    assert( weights_[m].size() == num_channels_ );
+    for (int k=0; k<num_channels_; k++) {
+      assert( weights_[m][k].size() == breadth_filter_ );
+      for (int i=0; i<breadth_filter_; i++) {
+	assert( weights_[m][k][i].size() == breadth_filter_ );
+        for (int j=0; j<breadth_filter_; j++) {
+	  fscanf( fp , "%lf %lf" , &weights_[m][k][i][j].val , &weights_[m][k][i][j].gsum );
+        }
+      }
+    }
+  }
+  
+  fclose( fp );
+
 }

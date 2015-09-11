@@ -29,6 +29,9 @@ public:
     virtual void BackPropagate(vector<struct Neuron> const &input, vector<double> const &next_delta, ActivationFunction *f, vector<double> &delta);
     virtual void UpdateLazySubtrahend(vector<struct Neuron> const &input, const vector<double> &next_delta);
     virtual void ApplyLazySubtrahend();
+    
+    virtual void Save( char *s );
+    virtual void Load( char *s );
 
 private:
     bool neuron_connected_;

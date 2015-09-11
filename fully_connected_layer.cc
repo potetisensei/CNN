@@ -31,11 +31,11 @@ void FullyConnectedLayer::ConnectNeurons(
         w.val = GenRandom(0.0, 0.1);
         w.lazy_sub = 0.0;
         w.count = 0;
-	w.gsum = EPS;
+	w.gsum = 1.0;
         biases_[i] = w;
     }
 
-    double lim = 1.0 / sqrt( num_input_ );
+    double lim = 1.0 / num_input_; //1.0 / sqrt( num_input_ );
     weights_.resize(num_input_);
     for (int i=0; i<num_input_; i++) {
         weights_[i].resize(num_output_);
@@ -45,7 +45,7 @@ void FullyConnectedLayer::ConnectNeurons(
             w.val = GenRandom(0.0, lim);
             w.lazy_sub= 0.0;
             w.count = 0;
-	    w.gsum = EPS;
+	    w.gsum = 1.0;
             weights_[i][j] = w;
         }
     }
@@ -171,14 +171,14 @@ void FullyConnectedLayer::ApplyLazySubtrahend() {
 
             assert(w.count > 0);
 
-	    /* momentum 
+	    if( MOMENTUM ){
 	       double prevdelta = - w.lazy_sub * learning_rate_ / w.count + momentum_ * w.gsum;
 	       w.val += prevdelta;
 	       w.gsum = prevdelta;
-	    */
-
-	    w.gsum += (w.lazy_sub / w.count) * (w.lazy_sub / w.count);
-	    w.val -= learning_rate_ / sqrt( w.gsum ) * w.lazy_sub / w.count;
+	    } else if( ADAGRAD ){
+	      w.gsum += (w.lazy_sub / w.count) * (w.lazy_sub / w.count);
+	      w.val -= learning_rate_ / ( sqrt( w.gsum ) + 1.0 ) * w.lazy_sub / w.count;
+	    }
 
 	    w.lazy_sub = 0.0;
             w.count = 0;
@@ -192,17 +192,59 @@ void FullyConnectedLayer::ApplyLazySubtrahend() {
 
         assert(w.count > 0);
 
-	/* momentum 
-	   double prevdelta = - w.lazy_sub * learning_rate_ / w.count + momentum_ * w.gsum;
-	   w.val += prevdelta;
-	   w.gsum = prevdelta;
-	*/
-
-	w.gsum += (w.lazy_sub / w.count) * (w.lazy_sub / w.count);
-	w.val -= learning_rate_ / sqrt( w.gsum ) * w.lazy_sub / w.count;
+	if( MOMENTUM ){
+	  double prevdelta = - w.lazy_sub * learning_rate_ / w.count + momentum_ * w.gsum;
+	  w.val += prevdelta;
+	  w.gsum = prevdelta;
+	} else if( ADAGRAD ){
+	   w.gsum += (w.lazy_sub / w.count) * (w.lazy_sub / w.count);
+	   w.val -= learning_rate_ / ( sqrt( w.gsum ) + 1.0 ) * w.lazy_sub / w.count;
+	}
 
 	w.lazy_sub = 0.0;
         w.count = 0;
     }
 
+}
+
+
+void FullyConnectedLayer::Save( char *s ){
+  FILE *fp = fopen( s , "w" );
+  assert( fp != NULL );  
+  
+  assert( biases_.size() == num_output_ );
+  for (int i=0; i<num_output_; i++) 
+    fprintf( fp , "%lf %lf " , biases_[i].val , biases_[i].gsum );
+  fprintf( fp, "\n" );
+
+
+  assert( weights_.size() == num_input_ );
+  for (int i=0; i<num_input_; i++) {
+    assert( weights_[i].size() == num_output_ );
+    for (int j=0; j<num_output_; j++) 
+      fprintf( fp , "%lf %lf " , weights_[i][j].val , weights_[i][j].gsum );
+    fprintf( fp , "\n" );
+  }
+  
+  fclose( fp );
+}
+
+
+void FullyConnectedLayer::Load( char *s ){
+
+  FILE *fp = fopen( s , "r" );
+  assert( fp != NULL );
+  
+  assert( biases_.size() == num_output_ );
+  for (int i=0; i<num_output_; i++) 
+    fscanf( fp , "%lf %lf" , &biases_[i].val , &biases_[i].gsum );
+
+  assert( weights_.size() == num_input_ );
+  for (int i=0; i<num_input_; i++) {
+    assert( weights_[i].size() == num_output_ );
+    for (int j=0; j<num_output_; j++) 
+      fscanf( fp , "%lf %lf" , &weights_[i][j].val , &weights_[i][j].gsum );
+  }
+  
+  fclose( fp );
 }

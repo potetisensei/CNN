@@ -27,6 +27,9 @@ public:
     virtual void UpdateLazySubtrahend(vector<struct Neuron> const &input, const vector<double> &next_delta) { assert(0); }
     virtual void ApplyLazySubtrahend() { assert(0); }
 
+    virtual void Save( char *s ){ assert(0); }
+    virtual void Load( char *s ){ assert(0); }
+    
     ActivationFunction *f_;
     double dropout_rate_;    
 private:
