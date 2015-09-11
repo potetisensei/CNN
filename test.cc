@@ -808,6 +808,127 @@ void TestMNISTwithsave(){
 }
 
 
+
+void TestArtstyle(){
+
+  mt19937 mt( time( NULL ) );
+  int MAX_FILE = 12500;
+  char filename[256];
+  int LOOP_N = 1000;
+  int namonakiacc = 0;
+  vector<double> in, out;
+  DoubleVector2d ins, outs;
+
+  unsigned char* pixels;
+  int width, height, bpp;
+  
+  NeuralNet net;
+  RectifiedLinear rel;
+  LogisticSigmoid sigmoid;
+  Softmax softmax;
+  Identity id;
+
+  srand(time(NULL));
+  net.SetInputSize(128*128*3);
+  net.AppendLayer(new ConvLayer(128, 3 , 1, 2, 5, 4, &rel, 0.01, 0.9, 1.0));
+  net.AppendLayer(new PoolLayer(128, 4 , 2, 2, &id, 1.0));
+  net.AppendLayer(new ConvLayer(64 , 4 , 1, 2, 5, 8, &rel, 0.01, 0.9, 0.75));
+  net.AppendLayer(new PoolLayer(64 , 8 , 2, 2, &id, 1.0));
+  net.AppendLayer(new ConvLayer(32 , 8 , 1, 2, 5, 16, &rel, 0.01, 0.9, 0.75));
+  net.AppendLayer(new PoolLayer(32 , 16, 2, 2, &id, 1.0));
+  net.AppendLayer(new FullyConnectedLayer(16*16*16, 64, &rel, 0.01, 0.9, 0.75));  
+  net.AppendLayer(new FullyConnectedLayer(64, 2, &softmax, 0.01, 0.9, 0.5));
+  net.ConnectLayers();
+
+  net.Load( "dogandcat" );
+  
+  FILE *logfp = fopen( "aclog" , "w" );
+  fclose( logfp );
+  
+  int bloop = 0;
+  while( ++bloop ){
+    
+    cerr << bloop << endl;
+    for( int loop = 0; loop < 100; loop++ ){
+      in.clear();
+      out.clear();
+
+      int img_n = mt()%10000;
+      
+      if( mt() % 2 == 0 ){
+	out.push_back( 1.0 ); out.push_back( 0.0 );
+	sprintf( filename , "processed128/cat.%d.jpg" , img_n );
+      } else {
+	out.push_back( 0.0 ); out.push_back( 1.0 );
+	sprintf( filename , "processed128/dog.%d.jpg" , img_n );
+      }
+      
+      pixels = stbi_load( filename , &width , &height , &bpp , 0 );
+
+      for( int k = 0; k < 3; k++ )
+	for( int i = 0; i < 128; i++ )
+	  for( int j = 0; j < 128; j++ )
+	    in.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
+
+      stbi_image_free (pixels);      
+    
+      ins.clear();
+      ins.push_back( in );
+      outs.clear();
+      outs.push_back( out );
+    
+      net.TrainNetwork(ins, outs);
+    }
+
+    namonakiacc = 0;
+    for( int loop = 0; loop < 100; loop++ ){
+      in.clear();
+      out.clear(); out.resize(2);
+      int ans;
+
+      int img_n = 10000 + mt()%2500;      
+      
+      if( mt() % 2 == 0 ){
+	ans = 0;
+	sprintf( filename , "processed36/cat.%d.jpg" , img_n );
+      } else {
+	ans = 1;
+	sprintf( filename , "processed36/dog.%d.jpg" , img_n );
+      }
+      
+      pixels = stbi_load( filename , &width , &height , &bpp , 0 );
+
+      for( int k = 0; k < 3; k++ )
+	for( int i = 0; i < 128; i++ )
+	  for( int j = 0; j < 128; j++ )
+	    in.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
+
+      stbi_image_free (pixels);      
+
+      net.PropagateLayers( in , out );
+
+      int res = 0;
+      if( out[0] < out[1] ) res = 1;
+
+      if( res == ans ) namonakiacc++;
+    }
+    cerr << "ac : " << namonakiacc << " / 100" << endl;
+
+    FILE *logfp = fopen( "aclog" , "a" );
+    fprintf( logfp , "%d\n" , namonakiacc );
+    fclose( logfp );
+
+    FILE *fp = fopen( "stop_f" , "r" );
+    int stop_f;
+    fscanf( fp , "%d" , &stop_f );
+    if( stop_f == 1 ) break;
+    fclose( fp );
+  }
+
+  net.Save( "dogandcat" );  
+}
+
+
 int main(){
 
   //TestFullyConnectedLayer();
@@ -815,5 +936,6 @@ int main(){
   //TestPoolLayer();
   //TestDeepLearning();
   //TestMNIST();
-  TestMNISTwithsave();  
+  //TestMNISTwithsave();
+  TestArtstyle();  
 }
