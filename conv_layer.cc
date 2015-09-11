@@ -65,7 +65,7 @@ void ConvLayer::ConnectNeurons(
   }
 
 
-  double lim = 1.0 / sqrt( num_channels_*breadth_filter_*breadth_filter_ );
+  double lim = 2.0 / ( num_channels_*breadth_filter_*breadth_filter_ ); //1.0 / sqrt( num_channels_*breadth_filter_*breadth_filter_ );
   weights_.resize(num_filters_);
   for (int m=0; m<num_filters_; m++) {
     weights_[m].resize(num_channels_);
