@@ -210,7 +210,6 @@ void FullyConnectedLayer::ApplyLazySubtrahend() {
 
 void FullyConnectedLayer::Save( char *s ){
   FILE *fp = fopen( s , "w" );
-  assert( fp != NULL );  
   
   assert( biases_.size() == num_output_ );
   for (int i=0; i<num_output_; i++) 

@@ -351,7 +351,6 @@ void TestDeepLearning(){
 }
 
 
-
 int rev( int x ){
   int res = 0;
 
@@ -616,11 +615,11 @@ void TestMNISTwithsave(){
   net.AppendLayer(new ConvLayer(28, 1, 1, 2, 5, 8, &rel, 0.01, 0.9, 1.0));
   net.AppendLayer(new PoolLayer(28, 8, 2, 2, &id, 1.0));
   net.AppendLayer(new ConvLayer(14, 8, 1, 2, 5, 16, &rel, 0.01, 0.9, 0.75));
-  net.AppendLayer(new PoolLayer(14, 16, 3, 3, &id, 1.0));    
+  net.AppendLayer(new PoolLayer(14, 16, 3, 3, &id, 1.0));
   net.AppendLayer(new FullyConnectedLayer(5*5*16, 10, &softmax, 0.01, 0.9, 0.5));
   net.ConnectLayers();
 
-  net.Load();
+  net.Load( "MNIST" );
 
   FILE *fp;
 
@@ -769,11 +768,9 @@ void TestMNISTwithsave(){
     }
 
     cerr << "ac : " << namonakiacc << " / " << 100 << endl;
-
-
   }
 
-  net.Save();
+  net.Save( "MNIST" );
 }
 
 

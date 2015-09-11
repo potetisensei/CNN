@@ -16,6 +16,7 @@ void NeuralNet::SetInputSize(int size) {
 void NeuralNet::AppendLayer(Layer *layer) {
     assert(!layer_connected_);
     layers_.push_back(layer);
+    learning_f_.push_back( true );
 }
 
 void NeuralNet::ConnectLayers() {
@@ -114,22 +115,23 @@ void NeuralNet::TrainNetwork(DoubleVector2d &inputs, DoubleVector2d &expected_ou
     }
 
     for (int i=last_idx-1; i>=0; i--) {
-        layers_[i]->ApplyLazySubtrahend();
+      if( learning_f_[i] )
+	layers_[i]->ApplyLazySubtrahend();
     }
 }
 
-void NeuralNet::Save(){
+void NeuralNet::Save( string s ){
   char filename[256];
   for( int i = 0; i < layers_.size(); i++ ){
-    sprintf( filename , "dat/dat_%d" , i );
+    sprintf( filename , "%sdat/dat_%d" , s.c_str() , i );
     layers_[i]->Save( filename );
   }
 }
 
-void NeuralNet::Load(){
+void NeuralNet::Load( string s ){
   char filename[256];
   for( int i = 0; i < layers_.size(); i++ ){
-    sprintf( filename , "dat/dat_%d" , i );
+    sprintf( filename , "%sdat/dat_%d" , s.c_str() , i );
     layers_[i]->Load( filename );
   }
 }
@@ -147,4 +149,8 @@ void NeuralNet::Visualize( int filenum , int depth , int size , int channel_n ){
   }
   sprintf( outputfilename , "output/img_%d_%d_%d.png" , filenum , depth , channel_n );
   stbi_write_png( outputfilename, size, size, 1, pixels, size );
+}
+
+void NeuralNet::SetLearningFlag( int layer_n , bool f ){
+  learning_f_[layer_n] = f;
 }

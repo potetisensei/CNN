@@ -359,7 +359,6 @@ void ConvLayer::ApplyLazySubtrahend() {
 
 void ConvLayer::Save( char *s ){
   FILE *fp = fopen( s , "w" );
-  assert( fp != NULL );  
 
   assert( num_filters_ == biases_.size() );
   for( int i=0; i<num_filters_; i++ )

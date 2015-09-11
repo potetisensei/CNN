@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cassert>
 #include <vector>
+#include <string>
 #include "util.h"
 #include "layer.h"
 using namespace std;
@@ -20,15 +21,18 @@ public:
     void BackPropagateLayers(vector<double> &expected);
     void TrainNetwork(DoubleVector2d &inputs, DoubleVector2d &expected_outputs);
 
-    void Save();
-    void Load();
+    void Save( string s );
+    void Load( string s );
 
     void Visualize( int filenum , int depth , int size , int channel_n );
+
+    void SetLearningFlag( int layer_n , bool f );
 private:
     bool layer_connected_;
     NeuronVector2d all_neurons_;
     vector<Layer*> layers_;
 
+    vector<bool> learning_f_;
 };
 
 #endif
