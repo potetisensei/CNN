@@ -386,7 +386,7 @@ void ConvLayer::Save( char *s ){
 
 void ConvLayer::Load( char *s ){
   FILE *fp = fopen( s , "r" );
-  assert( fp != NULL );  
+  if( fp == NULL ) return;
 
   assert( num_filters_ == biases_.size() );
   for( int i=0; i<num_filters_; i++ )

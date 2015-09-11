@@ -74,6 +74,7 @@ void TestFullyConnectedLayer() {
             puts("");
         }
     }
+    
 }
 
 void TestConvLayer() {
@@ -118,6 +119,7 @@ void TestConvLayer() {
         }puts("");
     }
     bmp.writeData("output.bmp");
+    
 }
 
 
@@ -168,6 +170,7 @@ void TestPoolLayer() {
         }puts("");
     }
     bmp.writeData("output.bmp");
+    
 }
 
 
@@ -710,13 +713,13 @@ void TestMNISTwithsave(){
 
   fclose( fp );
   
-  int lloop = 0;
-  int tloop = 0;
   int loop_n = 10;
 
   for( int loop = 1; loop < loop_n; loop++ ){
-    cerr << loop << " / " << loop_n << endl;    
-    for( ; lloop < 100*loop; lloop++ ){
+    cerr << loop << " / " << loop_n << endl;
+
+    // learn
+    for( int lloop = 0; lloop < 100; lloop++ ){
       in.clear();
       out = vector<double>(10,0.0);
 
@@ -737,8 +740,9 @@ void TestMNISTwithsave(){
     }
 
 
+    // recognize
     namonakiacc = 0;
-    for( ; tloop < 1000*loop; tloop++ ){
+    for( int tloop = 0; tloop < 100; tloop++ ){
       in.clear();
       out = vector<double>(10,0.0);
 
@@ -750,6 +754,13 @@ void TestMNISTwithsave(){
 
       net.PropagateLayers( in , out , false );
 
+      // visualize
+      if( tloop == 0 ){
+	net.Visualize( loop , 0 , 28 , 0 );
+	net.Visualize( loop , 2 , 14 , 0 );
+	net.Visualize( loop , 4 , 7 , 0 );
+      }
+
       int res = 0;
       for( int i = 1; i < 10; i++ )
 	if( out[res] < out[i] ) res = i;
@@ -757,38 +768,10 @@ void TestMNISTwithsave(){
       if( res == tlabel[tnum] ) namonakiacc++;
     }
 
-    cerr << "ac : " << namonakiacc << " / " << 1000 << endl;
+    cerr << "ac : " << namonakiacc << " / " << 100 << endl;
 
-    /*
-    if( loop == loop_n-1 ){
-      int addc = 0;
-      cerr << "addc : ";
-      scanf( "%d" , &addc );
-      loop_n += addc;
-    }
-    */
+
   }
-
-  namonakiacc = 0;
-  for( tloop = 0; tloop < Nt; tloop++ ){
-    in.clear();
-    out = vector<double>(10,0.0);
-
-    for( int i = 0; i < H; i++ )
-      for( int j = 0; j < W; j++ )
-	in.push_back( timg[tloop%Nt][i*W+j] );
-
-    net.PropagateLayers( in , out );
-
-    int res = 0;
-    for( int i = 1; i < 10; i++ )
-      if( out[res] < out[i] ) res = i;
-
-    if( res == tlabel[tloop%Nt] ) namonakiacc++;
-  }
-
-  cout << "ac : " << namonakiacc << " / " << Nt << endl;
-
 
   net.Save();
 }

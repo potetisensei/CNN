@@ -1,4 +1,7 @@
 #include "neural_net.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
 
 NeuralNet::NeuralNet() : layer_connected_(false)  {
     all_neurons_.resize(1);
@@ -129,4 +132,19 @@ void NeuralNet::Load(){
     sprintf( filename , "dat/dat_%d" , i );
     layers_[i]->Load( filename );
   }
+}
+
+
+void NeuralNet::Visualize( int filenum , int depth , int size , int channel_n ){
+  unsigned char pixels[size*size];
+  char outputfilename[256];
+
+  for( int i = 0; i < size; i++ ){
+    for( int j = 0; j < size; j++ ){
+      int id = size*size*channel_n + i*size + j;
+      pixels[i*size+j] = (unsigned char)( min( 0.999999 , all_neurons_[depth][id].z ) * 256 );
+    }
+  }
+  sprintf( outputfilename , "output/img_%d_%d_%d.png" , filenum , depth , channel_n );
+  stbi_write_png( outputfilename, size, size, 1, pixels, size );
 }

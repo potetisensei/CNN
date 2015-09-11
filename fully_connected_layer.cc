@@ -233,7 +233,7 @@ void FullyConnectedLayer::Save( char *s ){
 void FullyConnectedLayer::Load( char *s ){
 
   FILE *fp = fopen( s , "r" );
-  assert( fp != NULL );
+  if( fp == NULL ) return;
   
   assert( biases_.size() == num_output_ );
   for (int i=0; i<num_output_; i++) 
