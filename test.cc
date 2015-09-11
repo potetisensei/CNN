@@ -909,9 +909,9 @@ void TestArtstyle(){
 
       // visualize
       if( loop == 0 ){
-	net.Visualize( loop , 0 , 128 , 0 );
-	net.Visualize( loop , 2 , 64 , 0 );
-	net.Visualize( loop , 4 , 32  , 0 );
+	net.Visualize( bloop , 0 , 128 , 0 );
+	net.Visualize( bloop , 2 , 64 , 0 );
+	net.Visualize( bloop , 4 , 32  , 0 );
       }
 
       
