@@ -39,7 +39,7 @@ void FullyConnectedLayer::ConnectNeurons(
         biases_[i] = w;
     }
 
-    double lim = 1.0 / num_input_; //1.0 / sqrt( num_input_ );
+    double lim = 1.0 / sqrt( num_input_ );
     weights_.resize(num_input_);
     for (int i=0; i<num_input_; i++) {
         weights_[i].resize(num_output_);

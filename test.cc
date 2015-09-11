@@ -907,6 +907,14 @@ void TestArtstyle(){
 
       net.PropagateLayers( in , out );
 
+      // visualize
+      if( loop == 0 ){
+	net.Visualize( loop , 0 , 128 , 0 );
+	net.Visualize( loop , 2 , 64 , 0 );
+	net.Visualize( loop , 4 , 32  , 0 );
+      }
+
+      
       int res = 0;
       if( out[0] < out[1] ) res = 1;
 
