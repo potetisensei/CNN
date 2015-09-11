@@ -865,9 +865,9 @@ void TestArtstyle(){
       
       pixels = stbi_load( filename , &width , &height , &bpp , 0 );
 
-      for( int k = 0; k < 3; k++ )
-	for( int i = 0; i < 128; i++ )
-	  for( int j = 0; j < 128; j++ )
+      for( int k = 0; k < bpp; k++ )
+	for( int i = 0; i < height; i++ )
+	  for( int j = 0; j < width; j++ )
 	    in.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
 
       stbi_image_free (pixels);      
@@ -890,17 +890,17 @@ void TestArtstyle(){
       
       if( mt() % 2 == 0 ){
 	ans = 0;
-	sprintf( filename , "processed36/cat.%d.jpg" , img_n );
+	sprintf( filename , "processed128/cat.%d.jpg" , img_n );
       } else {
 	ans = 1;
-	sprintf( filename , "processed36/dog.%d.jpg" , img_n );
+	sprintf( filename , "processed128/dog.%d.jpg" , img_n );
       }
       
       pixels = stbi_load( filename , &width , &height , &bpp , 0 );
 
-      for( int k = 0; k < 3; k++ )
-	for( int i = 0; i < 128; i++ )
-	  for( int j = 0; j < 128; j++ )
+      for( int k = 0; k < bpp; k++ )
+	for( int i = 0; i < height; i++ )
+	  for( int j = 0; j < width; j++ )
 	    in.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
 
       stbi_image_free (pixels);      
