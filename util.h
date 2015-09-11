@@ -10,6 +10,10 @@
 #define MOMENTUM 0
 #define ADAGRAD 1
 
+#define CONV_LAYER 0
+#define POOL_LAYER 1
+#define FULLY_LAYER 2
+
 using namespace std;
 
 typedef vector<vector<double> > DoubleVector2d;

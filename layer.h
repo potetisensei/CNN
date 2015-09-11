@@ -31,7 +31,8 @@ public:
     virtual void Load( char *s ){ assert(0); }
     
     ActivationFunction *f_;
-    double dropout_rate_;    
+    double dropout_rate_;
+    int layer_type_;
 private:
 
 };

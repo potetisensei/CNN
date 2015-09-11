@@ -6,7 +6,11 @@ FullyConnectedLayer::FullyConnectedLayer(int num_input, int num_output, Activati
           num_output_(num_output),
           learning_rate_(learning_rate),
 	  momentum_(momentum),
-          Layer(f, dropout_rate) {}
+          Layer(f, dropout_rate) {
+
+  layer_type_ = FULLY_LAYER;
+
+}
 
 
 void FullyConnectedLayer::CheckInputUnits(vector<struct Neuron> const &units) {

@@ -154,3 +154,4 @@ void NeuralNet::Visualize( int filenum , int depth , int size , int channel_n ){
 void NeuralNet::SetLearningFlag( int layer_n , bool f ){
   learning_f_[layer_n] = f;
 }
+

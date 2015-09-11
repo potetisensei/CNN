@@ -23,6 +23,8 @@ ConvLayer::ConvLayer(
        Layer(f, dropout_rate) {
   assert(stride >= 1);
 
+  layer_type_ = CONV_LAYER;
+
   num_input_ = breadth_neuron * breadth_neuron;
   assert(num_input_/breadth_neuron == breadth_neuron);
   num_input_ *= num_channels;

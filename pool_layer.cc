@@ -18,6 +18,8 @@ PoolLayer::PoolLayer(
   int num_input;
   int num_output;
 
+  layer_type_ = POOL_LAYER;
+
   breadth_output_ = (breadth_neuron-1)/stride + 1;
 
   num_input = breadth_neuron * breadth_neuron;
@@ -26,11 +28,12 @@ PoolLayer::PoolLayer(
   assert(num_input / num_channels == breadth_neuron * breadth_neuron);
   num_input_ = num_input;
 
-  num_output =breadth_output_ * breadth_output_;
+  num_output = breadth_output_ * breadth_output_;
   assert(num_output / breadth_output_ == breadth_output_);
   num_output *= num_channels;
   assert(num_output / num_channels == breadth_output_ * breadth_output_);
   num_output_ = num_output;
+
 }
 
 void PoolLayer::CheckInputUnits(vector<struct Neuron> const &units) {
@@ -55,33 +58,33 @@ void PoolLayer::ConnectNeurons(
 
 void PoolLayer::CalculateOutputUnits(vector<struct Neuron> &units) {
   assert(units.size() == num_output_);
-
-  double outputmax = -1000;
-  double outputmin = 1000;
   
   for (int i=0; i<num_output_; i++) {
     units[i].z = f_->Calculate(units[i].u, units);
+  }
 
+  CalculateStyleMatrix( units );
+  
+#if DEBUG
+  double outputmax = -1000;
+  double outputmin = 1000;
+  for( int i = 0; i < num_output_; i++ ){
     outputmax = max( outputmax , units[i].z );
     outputmin = min( outputmin , units[i].z );    
   }
-
-#if debug
   printf( "poolsig : %lf %lf\n" , outputmax , outputmin );
 #endif
 }
 
 void PoolLayer::Propagate(
-			  vector<struct Neuron> const &input,
-			  vector<struct Neuron> &output) {
+  vector<struct Neuron> const &input,
+  vector<struct Neuron> &output) {
+  
   int area_output = breadth_output_ * breadth_output_;
   int area_input = breadth_neuron_ * breadth_neuron_;
 
   assert(input.size() == num_input_);
   assert(output.size() == num_output_);
-
-  double outputmax = -1000;
-  double outputmin = 1000;
   
   for (int i=0; i<num_output_; i++) {
     output[i].u = 0.0;
@@ -114,21 +117,27 @@ void PoolLayer::Propagate(
 	    }
           }
         }
-
+	
 	assert(maxv != -numeric_limits<double>::max());
 	output[output_idx].u = maxv;
 
-	outputmax = max( outputmax , maxv );
-	outputmin = min( outputmin , maxv );
       }
     }
   }
 
+  propagated_ = true;
+  
+  
 #if DEBUG
+  double outputmax = -1000;
+  double outputmin = 1000;
+  for( int i = 0; i < output.size(); i++ ){
+    outputmax = max( outputmax , output[i].u );
+    outputmin = min( outputmin , output[i].u );
+  }
   printf( "pool : %lf %lf\n" , outputmax , outputmin );
 #endif
   
-  propagated_ = true;
 }
 
 void PoolLayer::BackPropagate(
@@ -183,4 +192,34 @@ void PoolLayer::Save( char *s ) {
 
 void PoolLayer::Load( char *s ) {
   // do nothing
+}
+
+void PoolLayer::CalculateStyleMatrix(vector<struct Neuron> &units) {
+  int area_output = breadth_output_ * breadth_output_;
+
+  vector<double> ave( num_channels_ , 0.0 );
+  for( int i = 0; i < num_channels_; i++ ){
+    for( int j = 0; j < area_output; j++ )
+      ave[i] += units[i*area_output+j].z;
+    ave[i] /= area_output;
+  }
+
+  vector<double> dev( num_channels_ , 0.0 );
+  for( int i = 0; i < num_channels_; i++ ){
+    for( int j = 0; j < area_output; j++ )
+      dev[i] += ( units[i*area_output+j].z - ave[i] ) * ( units[i*area_output+j].z - ave[i] );
+    dev[i] = sqrt( dev[i] );
+  }
+  
+  
+  style_matrix.resize( num_channels_ );
+  for( int i = 0; i < num_channels_; i++ ){
+    style_matrix[i].resize( num_channels_ );
+    for( int j = 0; j < num_channels_; j++ ){
+      double cov = 0.0;
+      for( int k = 0; k < area_output; k++ )
+	cov += ( units[i*area_output+k].z - ave[i] ) * ( units[j*area_output+k].z - ave[j] );
+      style_matrix[i][j] = cov / ( dev[i] * dev[j] );
+    }
+  }
 }

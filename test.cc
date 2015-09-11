@@ -592,6 +592,7 @@ void TestMNIST(){
   
 }
 
+
 void TestMNISTwithsave(){
 
   mt19937 mt( time(NULL) );
@@ -604,6 +605,8 @@ void TestMNISTwithsave(){
 
   int namonakiacc = 0;
 
+  bool recoglearn = true;
+
   NeuralNet net;
   RectifiedLinear rel;
   LogisticSigmoid sigmoid;
@@ -611,13 +614,28 @@ void TestMNISTwithsave(){
   Identity id;
 
   srand(time(NULL));
-  net.SetInputSize(28*28);
-  net.AppendLayer(new ConvLayer(28, 1, 1, 2, 5, 8, &rel, 0.01, 0.9, 1.0));
-  net.AppendLayer(new PoolLayer(28, 8, 2, 2, &id, 1.0));
-  net.AppendLayer(new ConvLayer(14, 8, 1, 2, 5, 16, &rel, 0.01, 0.9, 0.75));
-  net.AppendLayer(new PoolLayer(14, 16, 3, 3, &id, 1.0));
-  net.AppendLayer(new FullyConnectedLayer(5*5*16, 10, &softmax, 0.01, 0.9, 0.5));
-  net.ConnectLayers();
+  if( recoglearn ){
+    net.SetInputSize(28*28);
+    net.AppendLayer(new ConvLayer(28, 1, 1, 2, 5, 8, &rel, 0.01, 0.9, 1.0));
+    net.AppendLayer(new PoolLayer(28, 8, 2, 2, &id, 1.0));
+    net.AppendLayer(new ConvLayer(14, 8, 1, 2, 5, 16, &rel, 0.01, 0.9, 0.75));
+    net.AppendLayer(new PoolLayer(14, 16, 3, 3, &id, 1.0));
+    net.AppendLayer(new FullyConnectedLayer(5*5*16, 10, &softmax, 0.01, 0.9, 0.5));
+    net.ConnectLayers();
+  } else {
+    net.SetInputSize(28*28);
+    net.AppendLayer(new ConvLayer(28, 1, 1, 2, 5, 8, &rel, 0.01, 0.9, 1.0));
+    net.AppendLayer(new PoolLayer(28, 8, 2, 2, &id, 1.0));
+    net.AppendLayer(new ConvLayer(14, 8, 1, 2, 5, 16, &rel, 0.01, 0.9, 0.75));
+    net.AppendLayer(new PoolLayer(14, 16, 3, 3, &id, 1.0));
+    net.AppendLayer(new FullyConnectedLayer(5*5*16, 28*28, &rel, 0.01, 0.9, 1.0));  
+    net.ConnectLayers();
+
+    net.SetLearningFlag( 0 , false );
+    net.SetLearningFlag( 1 , false );
+    net.SetLearningFlag( 2 , false );
+    net.SetLearningFlag( 3 , false );
+  }
 
   net.Load( "MNIST" );
 
@@ -712,23 +730,29 @@ void TestMNISTwithsave(){
 
   fclose( fp );
   
-  int loop_n = 10;
-
-  for( int loop = 1; loop < loop_n; loop++ ){
-    cerr << loop << " / " << loop_n << endl;
+  int loop = 0;
+  
+  while( ++loop ){
+    cerr << loop << endl;
 
     // learn
     for( int lloop = 0; lloop < 100; lloop++ ){
       in.clear();
-      out = vector<double>(10,0.0);
+      out.clear();
 
       int lnum = mt()%Nl;
 
-      for( int i = 0; i < H; i++ )
-	for( int j = 0; j < W; j++ )
+      for( int i = 0; i < H; i++ ){
+	for( int j = 0; j < W; j++ ){
 	  in.push_back( limg[lnum][i*W+j] );
+	  if( !recoglearn ) out.push_back( limg[lnum][i*W+j] );	  
+	}
+      }
 
-      out[ llabel[lnum] ] = 1.0;
+      if( recoglearn ){
+	out.resize( 10 , 0.0 );
+	out[ llabel[lnum] ] = 1.0;
+      }
 
       ins.clear();
       ins.push_back( in );
@@ -743,7 +767,8 @@ void TestMNISTwithsave(){
     namonakiacc = 0;
     for( int tloop = 0; tloop < 100; tloop++ ){
       in.clear();
-      out = vector<double>(10,0.0);
+      if( recoglearn ) out = vector<double>(10,0.0);
+      else out = vector<double>(28*28,0.0);
 
       int tnum = mt()%Nt;
 
@@ -757,17 +782,26 @@ void TestMNISTwithsave(){
       if( tloop == 0 ){
 	net.Visualize( loop , 0 , 28 , 0 );
 	net.Visualize( loop , 2 , 14 , 0 );
-	net.Visualize( loop , 4 , 7 , 0 );
+	net.Visualize( loop , 4 , 7  , 0 );
+	if( !recoglearn ) net.Visualize( loop , 5 , 28 , 0 );
       }
 
-      int res = 0;
-      for( int i = 1; i < 10; i++ )
-	if( out[res] < out[i] ) res = i;
+      if( recoglearn ){
+	int res = 0;
+	for( int i = 1; i < 10; i++ )
+	  if( out[res] < out[i] ) res = i;
 
-      if( res == tlabel[tnum] ) namonakiacc++;
+	if( res == tlabel[tnum] ) namonakiacc++;
+      }
     }
 
-    cerr << "ac : " << namonakiacc << " / " << 100 << endl;
+    if( recoglearn ) cerr << "ac : " << namonakiacc << " / " << 100 << endl;
+
+    fp = fopen( "stop_f" , "r" );
+    int stop_f;
+    fscanf( fp , "%d" , &stop_f );
+    fclose( fp );
+    if( stop_f == 1 ) break;
   }
 
   net.Save( "MNIST" );
