@@ -828,17 +828,41 @@ void TestArtstyle(){
   Softmax softmax;
   Identity id;
 
+  bool recognize = false;
+
+  
   srand(time(NULL));
-  net.SetInputSize(128*128*3);
-  net.AppendLayer(new ConvLayer(128, 3 , 1, 2, 5, 4, &rel, 0.01, 0.9, 1.0));
-  net.AppendLayer(new PoolLayer(128, 4 , 2, 2, &id, 1.0));
-  net.AppendLayer(new ConvLayer(64 , 4 , 1, 2, 5, 8, &rel, 0.01, 0.9, 0.75));
-  net.AppendLayer(new PoolLayer(64 , 8 , 2, 2, &id, 1.0));
-  net.AppendLayer(new ConvLayer(32 , 8 , 1, 2, 5, 16, &rel, 0.01, 0.9, 0.75));
-  net.AppendLayer(new PoolLayer(32 , 16, 2, 2, &id, 1.0));
-  net.AppendLayer(new FullyConnectedLayer(16*16*16, 64, &rel, 0.01, 0.9, 0.75));  
-  net.AppendLayer(new FullyConnectedLayer(64, 2, &softmax, 0.01, 0.9, 0.5));
-  net.ConnectLayers();
+  if( recognize ){
+    net.SetInputSize(128*128*3);
+    net.AppendLayer(new ConvLayer(128, 3 , 1, 2, 5, 4, &rel, 0.01, 0.9, 1.0));
+    net.AppendLayer(new PoolLayer(128, 4 , 2, 2, &id, 1.0));
+    net.AppendLayer(new ConvLayer(64 , 4 , 1, 2, 5, 8, &rel, 0.01, 0.9, 0.75));
+    net.AppendLayer(new PoolLayer(64 , 8 , 2, 2, &id, 1.0));
+    net.AppendLayer(new ConvLayer(32 , 8 , 1, 2, 5, 16, &rel, 0.01, 0.9, 0.75));
+    net.AppendLayer(new PoolLayer(32 , 16, 2, 2, &id, 1.0));
+    net.AppendLayer(new FullyConnectedLayer(16*16*16, 64, &rel, 0.01, 0.9, 0.75));  
+    net.AppendLayer(new FullyConnectedLayer(64, 2, &softmax, 0.01, 0.9, 0.5));
+    net.ConnectLayers();
+  } else {
+    net.SetInputSize(128*128*3);
+    net.AppendLayer(new ConvLayer(128, 3 , 1, 2, 5, 4, &rel, 0.01, 0.9, 1.0));
+    net.AppendLayer(new PoolLayer(128, 4 , 2, 2, &id, 1.0));
+    net.AppendLayer(new ConvLayer(64 , 4 , 1, 2, 5, 8, &rel, 0.01, 0.9, 1.0));
+    net.AppendLayer(new PoolLayer(64 , 8 , 2, 2, &id, 1.0));
+    net.AppendLayer(new ConvLayer(32 , 8 , 1, 2, 5, 16, &rel, 0.01, 0.9, 1.0));
+    net.AppendLayer(new PoolLayer(32 , 16, 2, 2, &id, 1.0));
+    net.AppendLayer(new FullyConnectedLayer(16*16*16, 64, &rel, 0.01, 0.9, 1.0));
+    net.AppendLayer(new FullyConnectedLayer(64, 128*128*3, &softmax, 0.01, 0.9, 1.0));    
+    net.ConnectLayers();
+
+    net.SetLearningFlag( 0 , false );
+    net.SetLearningFlag( 1 , false );
+    net.SetLearningFlag( 2 , false );
+    net.SetLearningFlag( 3 , false );
+    net.SetLearningFlag( 4 , false );
+    net.SetLearningFlag( 5 , false );
+    net.SetLearningFlag( 6 , false );
+  }
 
   net.Load( "dogandcat" );
   
@@ -856,19 +880,28 @@ void TestArtstyle(){
       int img_n = mt()%10000;
       
       if( mt() % 2 == 0 ){
-	out.push_back( 1.0 ); out.push_back( 0.0 );
+	if( recognize ){
+	  out.push_back( 1.0 ); out.push_back( 0.0 );
+	}
 	sprintf( filename , "processed128/cat.%d.jpg" , img_n );
       } else {
-	out.push_back( 0.0 ); out.push_back( 1.0 );
+	if( recognize ){
+	  out.push_back( 0.0 ); out.push_back( 1.0 );
+	}
 	sprintf( filename , "processed128/dog.%d.jpg" , img_n );
       }
       
       pixels = stbi_load( filename , &width , &height , &bpp , 0 );
 
-      for( int k = 0; k < bpp; k++ )
-	for( int i = 0; i < height; i++ )
-	  for( int j = 0; j < width; j++ )
+      for( int k = 0; k < bpp; k++ ){
+	for( int i = 0; i < height; i++ ){
+	  for( int j = 0; j < width; j++ ){
 	    in.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
+	    if( !recognize )
+	      out.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
+	  }
+	}
+      }
 
       stbi_image_free (pixels);      
     
@@ -883,7 +916,9 @@ void TestArtstyle(){
     namonakiacc = 0;
     for( int loop = 0; loop < 100; loop++ ){
       in.clear();
-      out.clear(); out.resize(2);
+      out.clear();
+      if( recognize ) out.resize(2);
+      else out.resize( 128*128*3 );
       int ans;
 
       int img_n = 10000 + mt()%2500;      
@@ -912,15 +947,15 @@ void TestArtstyle(){
 	net.Visualize( bloop , 0 , 128 , 0 );
 	net.Visualize( bloop , 2 , 64 , 0 );
 	net.Visualize( bloop , 4 , 32  , 0 );
+	if( !recognize ) net.Visualize( bloop , 8 , 128 , 0 );	
       }
-
       
       int res = 0;
       if( out[0] < out[1] ) res = 1;
 
       if( res == ans ) namonakiacc++;
     }
-    cerr << "ac : " << namonakiacc << " / 100" << endl;
+    if( recognize ) cerr << "ac : " << namonakiacc << " / 100" << endl;
 
     FILE *logfp = fopen( "aclog" , "a" );
     fprintf( logfp , "%d\n" , namonakiacc );
