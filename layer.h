@@ -29,6 +29,8 @@ public:
 
     virtual void Save( char *s ){ assert(0); }
     virtual void Load( char *s ){ assert(0); }
+
+    DoubleVector2d style_matrix;    
     
     ActivationFunction *f_;
     double dropout_rate_;

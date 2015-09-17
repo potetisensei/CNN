@@ -46,6 +46,7 @@ void NeuralNet::PropagateLayers(
     assert(last_neurons.size() == output.size());
 
     for (int i=0; i<input.size(); i++) {
+        first_neurons[i].u = input[i];      
         first_neurons[i].z = input[i];
     }
 
@@ -92,6 +93,15 @@ void NeuralNet::BackPropagateLayers(vector<double> &expected) {
 	   delta[j] *= all_neurons_[i][j].is_valid;
     }
     layers_[0]->UpdateLazySubtrahend(all_neurons_[0], delta);
+
+    Identity id;
+    layers_[0]->BackPropagate(all_neurons_[0], delta, &id, prev_delta);
+    delta = prev_delta;
+	 
+    assert( delta.size() == all_neurons_[0].size() );
+    for( int j = 0; j < delta.size(); j++ )
+      delta[j] *= all_neurons_[0][j].is_valid;    
+    delta_ = delta;
 }
 
 void NeuralNet::TrainNetwork(DoubleVector2d &inputs, DoubleVector2d &expected_outputs) {
@@ -106,7 +116,7 @@ void NeuralNet::TrainNetwork(DoubleVector2d &inputs, DoubleVector2d &expected_ou
     assert(inputs.size() == expected_outputs.size());
     
     for (int i=0; i<last_idx; i++) {
-        layers_[i]->ChooseDropoutUnits(all_neurons_[i]);
+      layers_[i]->ChooseDropoutUnits(all_neurons_[i]);
     }
 
     for (int i=0; i<inputs.size(); i++) {
@@ -138,15 +148,30 @@ void NeuralNet::Load( string s ){
 
 
 void NeuralNet::Visualize( int filenum , int depth , int size , int channel_n ){
+  
   unsigned char pixels[size*size];
   char outputfilename[256];
 
+  double maxv = -1000;
+  double minv = 1000;
+  
   for( int i = 0; i < size; i++ ){
     for( int j = 0; j < size; j++ ){
       int id = size*size*channel_n + i*size + j;
-      pixels[i*size+j] = (unsigned char)( min( 0.999999 , all_neurons_[depth][id].z ) * 256 );
+      maxv = max( maxv , all_neurons_[depth][id].z );
+      minv = min( minv , all_neurons_[depth][id].z );
     }
   }
+
+  
+  for( int i = 0; i < size; i++ ){
+    for( int j = 0; j < size; j++ ){
+      int id = size*size*channel_n + i*size + j;
+      pixels[i*size+j] = (unsigned char)( ( all_neurons_[depth][id].z - minv ) / ( maxv - minv ) * 255 );
+      assert( 0 <= pixels[i*size+j] && pixels[i*size+j] < 256 );
+    }
+  }
+  
   sprintf( outputfilename , "output/img_%d_%d_%d.png" , filenum , depth , channel_n );
   stbi_write_png( outputfilename, size, size, 1, pixels, size );
 }
@@ -155,3 +180,49 @@ void NeuralNet::SetLearningFlag( int layer_n , bool f ){
   learning_f_[layer_n] = f;
 }
 
+void NeuralNet::SetStyle(){
+  style_matrix_.clear();
+  for (int i=0; i<layers_.size(); i++) {
+    if( layers_[i]->layer_type_ == POOL_LAYER ){
+      style_matrix_depth_.push_back( i );
+      style_matrix_.push_back( layers_[i]->style_matrix );
+    }
+  }
+}
+
+void NeuralNet::SetMiddle( int depth ){
+  middle_layer_depth_ = depth;
+  
+  vector<struct Neuron> &middle_neurons = all_neurons_[depth];
+    
+  middle_layer_.resize(middle_neurons.size());
+  for (int i=0; i<middle_neurons.size(); i++) {
+    middle_layer_[i] = middle_neurons[i].z;
+  }
+}
+
+double NeuralNet::GetError(){
+  double res = 0;
+  for (int i=0; i<style_matrix_.size(); i++) {
+    int d = style_matrix_depth_[i];
+    for( int j = 0; j < style_matrix_[i].size(); j++ ){
+      for( int k = 0; k < style_matrix_[i][j].size(); k++ ){
+	double dx = style_matrix_[i][j][k] - layers_[d]->style_matrix[j][k];
+	res += dx * dx / (double)style_matrix_.size();
+      }
+    }
+  }
+  res *= 1e6;
+
+  double res2 = 0;
+  vector<struct Neuron> &middle_neurons = all_neurons_[middle_layer_depth_];
+  for (int i=0; i<middle_neurons.size(); i++) {
+    double dx = middle_layer_[i] - middle_neurons[i].z;
+    res2 += dx * dx;
+  }
+
+  
+  printf( "%lf\n" , res2 );
+
+  return res + res2;
+}

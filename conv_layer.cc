@@ -65,7 +65,7 @@ void ConvLayer::ConnectNeurons(
   }
 
 
-  double lim = 2.0 / ( num_channels_*breadth_filter_*breadth_filter_ ); //1.0 / sqrt( num_channels_*breadth_filter_*breadth_filter_ );
+  double lim = 0.85 / sqrt( num_channels_*breadth_filter_*breadth_filter_ );
   weights_.resize(num_filters_);
   for (int m=0; m<num_filters_; m++) {
     weights_[m].resize(num_channels_);
@@ -94,7 +94,7 @@ void ConvLayer::CalculateOutputUnits(vector<struct Neuron> &units) {
 
   double outputmax = -1000;
   double outputmin = 1000;
-  
+
   for (int i=0; i<num_output_; i++) {
     units[i].z = f_->Calculate(units[i].u, units);
 
@@ -135,7 +135,7 @@ void ConvLayer::Propagate(
       for (int j=0; j<breadth_output_; j++) {
         int output_idx = m*area_output + i*breadth_output_ + j;
         double sum_conv = 0.0;
-
+	
         assert(i*stride_ - padding_ < breadth_neuron_);
         assert(j*stride_ - padding_ < breadth_neuron_);
 
@@ -160,7 +160,7 @@ void ConvLayer::Propagate(
 
         assert(output_idx < output.size());
         output[output_idx].u = sum_conv + biases_[m].val;
-	
+
 	outputmax = max( outputmax, output[output_idx].u );
 	outputmin = min( outputmin, output[output_idx].u );		
       }
@@ -387,12 +387,15 @@ void ConvLayer::Save( char *s ){
 
 void ConvLayer::Load( char *s ){
   FILE *fp = fopen( s , "r" );
-  if( fp == NULL ) return;
+  if( fp == NULL ){
+    printf( "%s Not Found\n" , s );
+    return;
+  }
+  printf( "%s Found\n" , s );
 
   assert( num_filters_ == biases_.size() );
   for( int i=0; i<num_filters_; i++ )
     fscanf( fp , "%lf %lf" , &biases_[i].val , &biases_[i].gsum );
-
 
   assert( weights_.size() == num_filters_ );
   for (int m=0; m<num_filters_; m++) {

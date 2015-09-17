@@ -63,7 +63,7 @@ void PoolLayer::CalculateOutputUnits(vector<struct Neuron> &units) {
     units[i].z = f_->Calculate(units[i].u, units);
   }
 
-  CalculateStyleMatrix( units );
+  //CalculateStyleMatrix( units );
   
 #if DEBUG
   double outputmax = -1000;

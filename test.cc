@@ -14,7 +14,7 @@
 #include "bmp.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-#include "omp.h"
+#include "stb_image_write.h"
 
 using namespace std;
 
@@ -828,41 +828,18 @@ void TestArtstyle(){
   Softmax softmax;
   Identity id;
 
-  bool recognize = false;
-
   
   srand(time(NULL));
-  if( recognize ){
-    net.SetInputSize(128*128*3);
-    net.AppendLayer(new ConvLayer(128, 3 , 1, 2, 5, 4, &rel, 0.01, 0.9, 1.0));
-    net.AppendLayer(new PoolLayer(128, 4 , 2, 2, &id, 1.0));
-    net.AppendLayer(new ConvLayer(64 , 4 , 1, 2, 5, 8, &rel, 0.01, 0.9, 0.75));
-    net.AppendLayer(new PoolLayer(64 , 8 , 2, 2, &id, 1.0));
-    net.AppendLayer(new ConvLayer(32 , 8 , 1, 2, 5, 16, &rel, 0.01, 0.9, 0.75));
-    net.AppendLayer(new PoolLayer(32 , 16, 2, 2, &id, 1.0));
-    net.AppendLayer(new FullyConnectedLayer(16*16*16, 64, &rel, 0.01, 0.9, 0.75));  
-    net.AppendLayer(new FullyConnectedLayer(64, 2, &softmax, 0.01, 0.9, 0.5));
-    net.ConnectLayers();
-  } else {
-    net.SetInputSize(128*128*3);
-    net.AppendLayer(new ConvLayer(128, 3 , 1, 2, 5, 4, &rel, 0.01, 0.9, 1.0));
-    net.AppendLayer(new PoolLayer(128, 4 , 2, 2, &id, 1.0));
-    net.AppendLayer(new ConvLayer(64 , 4 , 1, 2, 5, 8, &rel, 0.01, 0.9, 1.0));
-    net.AppendLayer(new PoolLayer(64 , 8 , 2, 2, &id, 1.0));
-    net.AppendLayer(new ConvLayer(32 , 8 , 1, 2, 5, 16, &rel, 0.01, 0.9, 1.0));
-    net.AppendLayer(new PoolLayer(32 , 16, 2, 2, &id, 1.0));
-    net.AppendLayer(new FullyConnectedLayer(16*16*16, 64, &rel, 0.01, 0.9, 1.0));
-    net.AppendLayer(new FullyConnectedLayer(64, 128*128*3, &softmax, 0.01, 0.9, 1.0));    
-    net.ConnectLayers();
-
-    net.SetLearningFlag( 0 , false );
-    net.SetLearningFlag( 1 , false );
-    net.SetLearningFlag( 2 , false );
-    net.SetLearningFlag( 3 , false );
-    net.SetLearningFlag( 4 , false );
-    net.SetLearningFlag( 5 , false );
-    net.SetLearningFlag( 6 , false );
-  }
+  net.SetInputSize(128*128*3);
+  net.AppendLayer(new ConvLayer(128, 3 , 1, 1, 3, 4, &rel, 0.01, 0.9, 1.0));
+  net.AppendLayer(new PoolLayer(128, 4, 2, 2, &id, 1.0));
+  net.AppendLayer(new ConvLayer(64 , 4, 1, 1, 3, 8, &rel, 0.01, 0.9, 0.75));
+  net.AppendLayer(new PoolLayer(64 , 8, 2, 2, &id, 1.0));
+  net.AppendLayer(new ConvLayer(32 , 8, 1, 1, 3, 16, &rel, 0.01, 0.9, 0.75));
+  net.AppendLayer(new PoolLayer(32 , 16, 2, 2, &id, 1.0));
+  net.AppendLayer(new FullyConnectedLayer(16*16*16, 64, &rel, 0.01, 0.9, 0.75));  
+  net.AppendLayer(new FullyConnectedLayer(64, 2, &softmax, 0.01, 0.9, 0.5));
+  net.ConnectLayers();
 
   net.Load( "dogandcat" );
   
@@ -880,28 +857,19 @@ void TestArtstyle(){
       int img_n = mt()%10000;
       
       if( mt() % 2 == 0 ){
-	if( recognize ){
-	  out.push_back( 1.0 ); out.push_back( 0.0 );
-	}
+	out.push_back( 1.0 ); out.push_back( 0.0 );
 	sprintf( filename , "processed128/cat.%d.jpg" , img_n );
       } else {
-	if( recognize ){
-	  out.push_back( 0.0 ); out.push_back( 1.0 );
-	}
+	out.push_back( 0.0 ); out.push_back( 1.0 );
 	sprintf( filename , "processed128/dog.%d.jpg" , img_n );
       }
       
       pixels = stbi_load( filename , &width , &height , &bpp , 0 );
 
-      for( int k = 0; k < bpp; k++ ){
-	for( int i = 0; i < height; i++ ){
-	  for( int j = 0; j < width; j++ ){
+      for( int k = 0; k < bpp; k++ )
+	for( int i = 0; i < height; i++ )
+	  for( int j = 0; j < width; j++ )
 	    in.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
-	    if( !recognize )
-	      out.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
-	  }
-	}
-      }
 
       stbi_image_free (pixels);      
     
@@ -917,8 +885,7 @@ void TestArtstyle(){
     for( int loop = 0; loop < 100; loop++ ){
       in.clear();
       out.clear();
-      if( recognize ) out.resize(2);
-      else out.resize( 128*128*3 );
+      out.resize(2);
       int ans;
 
       int img_n = 10000 + mt()%2500;      
@@ -945,9 +912,12 @@ void TestArtstyle(){
       // visualize
       if( loop == 0 ){
 	net.Visualize( bloop , 0 , 128 , 0 );
-	net.Visualize( bloop , 2 , 64 , 0 );
+	net.Visualize( bloop , 1 , 128 , 0 );
+	net.Visualize( bloop , 2 , 64 , 0 );		
+	net.Visualize( bloop , 3 , 64 , 0 );	
 	net.Visualize( bloop , 4 , 32  , 0 );
-	if( !recognize ) net.Visualize( bloop , 8 , 128 , 0 );	
+	net.Visualize( bloop , 5 , 32  , 0 );
+	net.Visualize( bloop , 6 , 16  , 0 );	
       }
       
       int res = 0;
@@ -955,7 +925,7 @@ void TestArtstyle(){
 
       if( res == ans ) namonakiacc++;
     }
-    if( recognize ) cerr << "ac : " << namonakiacc << " / 100" << endl;
+    cerr << "ac : " << namonakiacc << " / 100" << endl;
 
     FILE *logfp = fopen( "aclog" , "a" );
     fprintf( logfp , "%d\n" , namonakiacc );
@@ -968,7 +938,300 @@ void TestArtstyle(){
     fclose( fp );
   }
 
-  net.Save( "dogandcat" );  
+  net.Save( "dogandcat" );
+}
+
+
+void TestArtstyle2(){
+  mt19937 mt( time( NULL ) );
+  int MAX_FILE = 12500;
+  char filename[256];
+
+  vector<double> in, out;
+  DoubleVector2d ins, outs;
+
+  double dx = 1e-6;
+  double learning_rate = 0.1;
+  double momentum = 0.9;
+
+  vector<int> ids;
+  vector<double> delta;
+  vector<double> gsum;
+
+  unsigned char* pixels;
+  int width, height, bpp;
+
+  char outputfilename[256];  
+  unsigned char output[128*128*3];
+  
+  NeuralNet net;
+  RectifiedLinear rel;
+  LogisticSigmoid sigmoid;
+  Softmax softmax;
+  Identity id;
+
+  srand(time(NULL));
+  net.SetInputSize(128);
+  net.AppendLayer(new ConvLayer(128, 3 , 1, 1, 3, 4, &rel, 0.01, 0.9, 1.0));
+  net.AppendLayer(new PoolLayer(128, 4, 2, 2, &id, 1.0));
+  net.AppendLayer(new ConvLayer(64 , 4, 1, 1, 3, 8, &rel, 0.01, 0.9, 0.75));
+  net.AppendLayer(new PoolLayer(64 , 8, 2, 2, &id, 1.0));
+  net.AppendLayer(new ConvLayer(32 , 8, 1, 1, 3, 16, &rel, 0.01, 0.9, 0.75));
+  net.AppendLayer(new PoolLayer(32 , 16, 2, 2, &id, 1.0));
+  net.ConnectLayers();
+
+  net.Load( "dogandcat" );
+
+  // Load teacher
+  pixels = stbi_load( "cat.jpg" , &width , &height , &bpp , 0 );
+
+  for( int k = 0; k < 3; k++ )
+    for( int i = 0; i < height; i++ )
+      for( int j = 0; j < width; j++ )
+	in.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
+
+  stbi_image_free (pixels);      
+
+  out.resize( 16*16*16 );
+  net.PropagateLayers( in , out );
+
+  net.SetMiddle( 5 );
+
+  pixels = stbi_load( "gogh.jpg" , &width , &height , &bpp , 0 );
+  
+  in.clear();
+  for( int k = 0; k < 3; k++ )
+    for( int i = 0; i < height; i++ )
+      for( int j = 0; j < width; j++ )
+	in.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
+
+  stbi_image_free (pixels);      
+
+  out.resize( 16*16*16 );
+  net.PropagateLayers( in , out );
+
+  net.SetStyle();
+  
+  in.clear();
+  pixels = stbi_load( "gogh.jpg" , &width , &height , &bpp , 0 );
+  for( int k = 0; k < 3; k++ )
+    for( int i = 0; i < height; i++ )
+      for( int j = 0; j < width; j++ )
+	in.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
+  /*
+  normal_distribution<> norm( 0.5 , 0.2 );
+  for( int k = 0; k < 3; k++ )
+    for( int i = 0; i < 128; i++ )
+      for( int j = 0; j < 128; j++ )
+	in.push_back( norm(mt) );
+  */
+
+  gsum.clear();
+  gsum.resize( in.size() , 0.0 );
+  
+  int bloop = 0;
+  while( ++bloop ){
+    
+    cerr << bloop << endl;
+
+    out.resize( 16*16*16 );
+
+    net.PropagateLayers( in , out );
+    double err = net.GetError();
+
+    delta.clear();
+    delta.resize( in.size() , 0.0 );
+    ids.clear();
+    for( int idx = 0; idx < in.size(); idx++ ){
+      in[idx] += dx;
+      net.PropagateLayers( in , out );
+      in[idx] -= dx;
+      double dy = net.GetError() - err;
+      delta[idx] = dy / dx;
+    }
+
+    for( int idx = 0; idx < in.size(); idx++ ){
+      double prevdelta = - delta[idx] * learning_rate + momentum * gsum[idx];
+      in[idx] += prevdelta;
+      gsum[idx] = prevdelta;
+    }
+
+    // visualize
+    for( int k = 0; k < 3; k++ )
+      for( int i = 0; i < 128; i++ )
+	for( int j = 0; j < 128; j++ )
+	  output[(i*128+j)*3+k] = (unsigned char)(in[k*128*128+i*128+j] * 256);
+    sprintf( outputfilename , "output/img_%d.png" , bloop );
+    stbi_write_png( outputfilename, 128, 128, 3, output, 128*3);
+
+    net.Visualize( bloop , 0 , 128 , 0 );
+    net.Visualize( bloop , 1 , 128 , 0 );
+    net.Visualize( bloop , 2 , 64 , 0 );		
+    net.Visualize( bloop , 3 , 64 , 0 );	
+    net.Visualize( bloop , 4 , 32  , 0 );
+    net.Visualize( bloop , 5 , 32  , 0 );
+
+
+    FILE *fp = fopen( "stop_f" , "r" );
+    int stop_f;
+    fscanf( fp , "%d" , &stop_f );
+    if( stop_f == 1 ) break;
+    fclose( fp );
+  }
+}
+
+
+void TestArtstyle3(){
+  mt19937 mt( time( NULL ) );
+  int MAX_FILE = 12500;
+  char filename[256];
+
+  vector<double> in, out;
+  DoubleVector2d ins, outs;
+
+  double dx = 1e-6;
+  double learning_rate = 0.01;
+  double momentum = 0.9;
+
+  vector<int> ids;
+  vector<double> delta;
+  vector<double> gsum;
+
+  unsigned char* pixels;
+  int width, height, bpp;
+
+  char outputfilename[256];  
+  unsigned char output[128*128*3];
+  
+  NeuralNet net;
+  RectifiedLinear rel;
+  LogisticSigmoid sigmoid;
+  Softmax softmax;
+  Identity id;
+
+  srand(time(NULL));
+  net.SetInputSize(128*128*3);
+  /*
+  net.AppendLayer(new ConvLayer(128, 3 , 1, 1, 3, 16, &rel, 0.01, 0.9, 1.0));
+  net.AppendLayer(new PoolLayer(128, 16, 2, 2, &id, 1.0));
+  net.AppendLayer(new ConvLayer(64 , 16, 1, 1, 3, 32, &rel, 0.01, 0.9, 0.75));
+  net.AppendLayer(new PoolLayer(64 , 32, 2, 2, &id, 1.0));
+  net.AppendLayer(new ConvLayer(32 , 32, 1, 1, 3, 64, &rel, 0.01, 0.9, 0.75));  
+  */
+  net.AppendLayer(new ConvLayer(128, 3 , 1, 1, 3, 16, &rel, 0.01, 0.9, 1.0));
+  net.AppendLayer(new PoolLayer(128, 16, 2, 2, &id, 1.0));
+  net.AppendLayer(new ConvLayer(64 , 16, 1, 1, 3, 32, &rel, 0.01, 0.9, 1.0));
+  net.AppendLayer(new PoolLayer(64 , 32, 2, 2, &id, 1.0));
+  net.AppendLayer(new ConvLayer(32 , 32, 1, 1, 3, 64, &rel, 0.01, 0.9, 1.0));  
+  net.ConnectLayers();
+
+  net.SetLearningFlag( 0 , false );
+  net.SetLearningFlag( 1 , false );
+  net.SetLearningFlag( 2 , false );
+  net.SetLearningFlag( 3 , false );
+  net.SetLearningFlag( 4 , false );    
+
+  net.Load( "dogandcat16" );
+
+  // Load teacher
+  pixels = stbi_load( "cat.jpg" , &width , &height , &bpp , 0 );
+
+  for( int k = 0; k < 3; k++ )
+    for( int i = 0; i < height; i++ )
+      for( int j = 0; j < width; j++ )
+	in.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
+
+  stbi_image_free (pixels);      
+
+  out.resize( 32*32*64 );
+  net.PropagateLayers( in , out );
+
+  net.SetMiddle( 5 );
+
+  pixels = stbi_load( "gogh.jpg" , &width , &height , &bpp , 0 );
+  
+  in.clear();
+  for( int k = 0; k < 3; k++ )
+    for( int i = 0; i < height; i++ )
+      for( int j = 0; j < width; j++ )
+	in.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
+
+  stbi_image_free (pixels);      
+
+  net.PropagateLayers( in , out );
+
+  net.SetStyle();
+  
+  in.clear();
+  pixels = stbi_load( "dat.png" , &width , &height , &bpp , 0 );
+
+  for( int k = 0; k < 3; k++ )
+    for( int i = 0; i < height; i++ )
+      for( int j = 0; j < width; j++ )
+	in.push_back( (double)pixels[(i*width+j)*3+k] / 256.0 );
+
+  stbi_image_free (pixels);      
+  
+  /*
+  normal_distribution<> norm( 0.5 , 0.2 );
+  for( int k = 0; k < 3; k++ )
+    for( int i = 0; i < 128; i++ )
+      for( int j = 0; j < 128; j++ )
+	in.push_back( norm(mt) );
+  */
+
+
+  
+  gsum.clear();
+  gsum.resize( in.size() , 0.0 );
+
+  out = net.middle_layer_;
+  outs.clear();
+  outs.push_back( out );    
+ 
+  int bloop = 0;
+  while( ++bloop ){
+    
+    cerr << bloop << endl;
+
+    for( int i = 0; i < 10; i++ ){
+
+      ins.clear();
+      ins.push_back( in );
+
+      net.TrainNetwork(ins, outs);
+
+      assert( in.size() == net.delta_.size() );
+      for( int i = 0; i < in.size(); i++ ){
+	gsum[i] += net.delta_[i] * net.delta_[i];
+	in[i] -= learning_rate / ( sqrt( gsum[i] ) + 1.0 ) * net.delta_[i];
+      }
+    }
+
+    net.GetError();
+    
+    // visualize
+    for( int k = 0; k < 3; k++ )
+      for( int i = 0; i < 128; i++ )
+	for( int j = 0; j < 128; j++ )
+	  output[(i*128+j)*3+k] = (unsigned char)(in[k*128*128+i*128+j] * 256);
+    sprintf( outputfilename , "output/img_%d.png" , bloop );
+    stbi_write_png( outputfilename, 128, 128, 3, output, 128*3);
+
+    net.Visualize( bloop , 0 , 128 , 0 );
+    net.Visualize( bloop , 1 , 128 , 0 );
+    net.Visualize( bloop , 2 , 64 , 0 );		
+    net.Visualize( bloop , 3 , 64 , 0 );	
+    net.Visualize( bloop , 4 , 32  , 0 );
+    net.Visualize( bloop , 5 , 32  , 0 );
+
+
+    FILE *fp = fopen( "stop_f" , "r" );
+    int stop_f;
+    fscanf( fp , "%d" , &stop_f );
+    if( stop_f == 1 ) break;
+    fclose( fp );
+  }
 }
 
 
@@ -980,5 +1243,7 @@ int main(){
   //TestDeepLearning();
   //TestMNIST();
   //TestMNISTwithsave();
-  TestArtstyle();  
+  //TestArtstyle();  
+  //TestArtstyle2();
+  TestArtstyle3();    
 }
