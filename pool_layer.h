@@ -31,8 +31,6 @@ class PoolLayer : public Layer {
     virtual void Save( char *s );
     virtual void Load( char *s );
 
-    void CalculateStyleMatrix(vector<struct Neuron> &units);
- 
     
 private:
     bool neuron_connected_;

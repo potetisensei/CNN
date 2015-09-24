@@ -25,15 +25,14 @@ public:
     void Load( string s );
 
     void Visualize( int filenum , int depth , int size , int channel_n );
+    void VisualizeStyle( int filenum );
 
     void SetLearningFlag( int layer_n , bool f );
  
     void SetStyle();
     void SetMiddle( int depth );
 
-    double GetError();
 
-    vector<double> middle_layer_;
     vector<double> delta_;
 private:
     bool layer_connected_;
@@ -41,10 +40,6 @@ private:
     vector<Layer*> layers_;
 
     vector<bool> learning_f_;
-
-    vector<int> style_matrix_depth_;
-    DoubleVector3d style_matrix_;
-    int middle_layer_depth_;
 
 };
 

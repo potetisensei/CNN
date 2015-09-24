@@ -1,4 +1,5 @@
 #include "conv_layer.h"
+#include "stb_image_write.h"
 
 ConvLayer::ConvLayer(
   int breadth_neuron, 
@@ -36,6 +37,9 @@ ConvLayer::ConvLayer(
   assert(num_output_/breadth_output_ == breadth_output_);
   num_output_ *= num_filters;
   assert(num_output_/num_filters == breadth_output_ * breadth_output_);
+
+  styleset_ = false;
+  contentset_ = false;
 }
 
 void ConvLayer::CheckInputUnits(vector<struct Neuron> const &units) {
@@ -60,7 +64,7 @@ void ConvLayer::ConnectNeurons(
     w.val = GenRandom(0, 0.1);
     w.lazy_sub = 0.0;
     w.count = 0;
-    w.gsum = 0.0;
+    w.gsum = 1000.0;
     biases_[i] = w;
   }
 
@@ -79,7 +83,7 @@ void ConvLayer::ConnectNeurons(
           w.val = GenRandom(0, lim);
           w.lazy_sub = 0.0;
           w.count = 0;
-	  w.gsum = 0.0;	  
+	  w.gsum = 1000.0;	  
           weights_[m][k][i][j] = w;
         }
       }
@@ -101,6 +105,9 @@ void ConvLayer::CalculateOutputUnits(vector<struct Neuron> &units) {
     outputmax = max( outputmax , units[i].z );
     outputmin = min( outputmin , units[i].z );    
   }
+
+  CalculateStyle( units );
+  CalculateContent( units );
 
 #if DEBUG
   printf( "convsig : %lf %lf\n" , outputmax , outputmin );
@@ -189,6 +196,30 @@ void ConvLayer::BackPropagate(
     delta[i] = 0.0;
   }
 
+  
+  vector<double> next_delta_with_styleerror = next_delta;
+  for( int m = 0; m < num_filters_; m++ ){
+    for( int i = 0; i < area_output; i++ ){
+      int idx = m * area_output + i;
+      next_delta_with_styleerror[idx] += styleerror_[i][m];
+    }
+  }
+
+  if( contentset_ ){
+    assert( content_.size() == next_delta_with_styleerror.size() );
+    for( int i = 0; i < content_.size(); i++ )
+      next_delta_with_styleerror[i] += content_[i] - tcontent_[i];
+    double res = 0.0;
+    for( int i = 0; i < content_.size(); i++ )
+      res += ( content_[i] - tcontent_[i] ) * ( content_[i] - tcontent_[i] );
+    printf( "content : %lf\n" , res );
+  }
+  double res = 0.0;
+  for( int m1 = 0; m1 < num_filters_; m1++ )
+    for( int m2 = 0; m2 < num_filters_; m2++ )
+      res += ( style_[m1][m2] - tstyle_[m1][m2] ) * ( style_[m1][m2] - tstyle_[m1][m2] );
+  printf( "style : %lf\n" , res );
+  
   double deltamax = -1000;
   double deltamin = 1000;
   
@@ -215,10 +246,14 @@ void ConvLayer::BackPropagate(
               if ( 0 <= x && x < breadth_neuron_ && 0 <= y && y < breadth_neuron_ && input[input_idx].u > 0) {
 		assert( 0 <= input_idx && input_idx < delta.size() );
 
-                delta[input_idx] += 
+		/*
+		 delta[input_idx] += 
                   next_delta[output_idx] * 
                   weights_[m][k][p][q].val;
-
+		*/
+                delta[input_idx] += 
+                  next_delta_with_styleerror[output_idx] * 
+                  weights_[m][k][p][q].val;
     	      }
             }
           }
@@ -413,4 +448,85 @@ void ConvLayer::Load( char *s ){
   
   fclose( fp );
 
+}
+
+void ConvLayer::CalculateStyle( vector<struct Neuron> &units ){
+  int area_output = breadth_output_ * breadth_output_;
+  
+  style_.clear();  
+  style_.resize( num_filters_ );
+  for( int m1 = 0; m1 < num_filters_; m1++ ){
+    style_[m1].clear();
+    style_[m1].resize( num_filters_ , 0.0 );
+    for( int m2 = 0; m2 < num_filters_; m2++ ){
+      for( int i = 0; i < area_output; i++ ){
+	int idx1 = m1 * area_output + i;
+	int idx2 = m2 * area_output + i;
+	style_[m1][m2] += units[idx1].z * units[idx2].z;
+      }
+    }
+  }
+
+  if( !styleset_ ) return;
+
+  
+  styleerror_.resize( area_output );
+  for( int i = 0; i < area_output; i++ ){
+    styleerror_[i].resize( num_filters_ );
+    for( int m = 0; m < num_filters_; m++ ){
+      styleerror_[i][m] = 0;
+      for( int k = 0; k < num_filters_; k++ ){
+	int idx = k * area_output + i;
+	styleerror_[i][m] += units[idx].z * ( style_[k][m] - tstyle_[k][m] );
+      }
+      styleerror_[i][m] /= 1e2;
+    }
+  } 
+
+}
+
+void ConvLayer::VisualizeStyle( int filenum ,  int depth ){ 
+
+  int size = num_filters_;
+  
+  unsigned char pixels[size*size];
+  char outputfilename[256];
+
+  double maxv = -1000;
+  double minv = 1000;
+  
+  for( int i = 0; i < size; i++ ){
+    for( int j = 0; j < size; j++ ){
+      maxv = max( maxv , style_[i][j] );
+      minv = min( minv , style_[i][j] );
+    }
+  }
+
+  
+  for( int i = 0; i < size; i++ ){
+    for( int j = 0; j < size; j++ ){
+      pixels[i*size+j] = (unsigned char)( ( style_[i][j] - minv ) / ( maxv - minv ) * 255 );
+      assert( 0 <= pixels[i*size+j] && pixels[i*size+j] < 256 );
+    }
+  }
+  
+  sprintf( outputfilename , "output/img_%d_s_%d.png" , filenum , depth );
+  stbi_write_png( outputfilename, size, size, 1, pixels, size );
+}
+
+void ConvLayer::SetStyle(){
+  styleset_ = true;
+  tstyle_ = style_;
+}
+
+
+void ConvLayer::CalculateContent( vector<struct Neuron> &units ){
+  content_.clear();
+  for( int i = 0; i < units.size(); i++ )
+    content_.push_back( units[i].z );
+}
+
+void ConvLayer::SetContent(){
+  contentset_ = true;
+  tcontent_ = content_;
 }

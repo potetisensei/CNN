@@ -194,32 +194,3 @@ void PoolLayer::Load( char *s ) {
   // do nothing
 }
 
-void PoolLayer::CalculateStyleMatrix(vector<struct Neuron> &units) {
-  int area_output = breadth_output_ * breadth_output_;
-
-  vector<double> ave( num_channels_ , 0.0 );
-  for( int i = 0; i < num_channels_; i++ ){
-    for( int j = 0; j < area_output; j++ )
-      ave[i] += units[i*area_output+j].z;
-    ave[i] /= area_output;
-  }
-
-  vector<double> dev( num_channels_ , 0.0 );
-  for( int i = 0; i < num_channels_; i++ ){
-    for( int j = 0; j < area_output; j++ )
-      dev[i] += ( units[i*area_output+j].z - ave[i] ) * ( units[i*area_output+j].z - ave[i] );
-    dev[i] = sqrt( dev[i] );
-  }
-  
-  
-  style_matrix.resize( num_channels_ );
-  for( int i = 0; i < num_channels_; i++ ){
-    style_matrix[i].resize( num_channels_ );
-    for( int j = 0; j < num_channels_; j++ ){
-      double cov = 0.0;
-      for( int k = 0; k < area_output; k++ )
-	cov += ( units[i*area_output+k].z - ave[i] ) * ( units[j*area_output+k].z - ave[j] );
-      style_matrix[i][j] = cov / ( dev[i] * dev[j] );
-    }
-  }
-}

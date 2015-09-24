@@ -30,11 +30,16 @@ public:
     virtual void Save( char *s ){ assert(0); }
     virtual void Load( char *s ){ assert(0); }
 
+    virtual void SetStyle(){ assert(0); }
+    virtual void SetContent(){ assert(0); }
+
     DoubleVector2d style_matrix;    
     
     ActivationFunction *f_;
     double dropout_rate_;
     int layer_type_;
+
+    virtual void VisualizeStyle( int filenum ,  int depth ){ assert( 0 ); }
 private:
 
 };

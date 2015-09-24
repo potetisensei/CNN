@@ -80,7 +80,7 @@ void NeuralNet::BackPropagateLayers(vector<double> &expected) {
     
     delta.resize(last_neurons.size());
     for (int i=0; i<last_neurons.size(); i++) {
-        delta[i] = last_neurons[i].z - expected[i];
+      delta[i] = 0;//last_neurons[i].z - expected[i];
     }
 
     for (int i=last_idx-1; i>=1; i--) {
@@ -176,53 +176,22 @@ void NeuralNet::Visualize( int filenum , int depth , int size , int channel_n ){
   stbi_write_png( outputfilename, size, size, 1, pixels, size );
 }
 
+void NeuralNet::VisualizeStyle( int filenum ){
+  for( int i = 0; i < layers_.size(); i++ )
+    if( layers_[i]->layer_type_ == CONV_LAYER ) layers_[i]->VisualizeStyle( filenum , i );
+}
+
 void NeuralNet::SetLearningFlag( int layer_n , bool f ){
   learning_f_[layer_n] = f;
 }
 
 void NeuralNet::SetStyle(){
-  style_matrix_.clear();
-  for (int i=0; i<layers_.size(); i++) {
-    if( layers_[i]->layer_type_ == POOL_LAYER ){
-      style_matrix_depth_.push_back( i );
-      style_matrix_.push_back( layers_[i]->style_matrix );
-    }
-  }
+  for (int i=0; i<layers_.size(); i++)
+    if( layers_[i]->layer_type_ == CONV_LAYER )
+      layers_[i]->SetStyle();
 }
 
 void NeuralNet::SetMiddle( int depth ){
-  middle_layer_depth_ = depth;
-  
-  vector<struct Neuron> &middle_neurons = all_neurons_[depth];
-    
-  middle_layer_.resize(middle_neurons.size());
-  for (int i=0; i<middle_neurons.size(); i++) {
-    middle_layer_[i] = middle_neurons[i].z;
-  }
-}
-
-double NeuralNet::GetError(){
-  double res = 0;
-  for (int i=0; i<style_matrix_.size(); i++) {
-    int d = style_matrix_depth_[i];
-    for( int j = 0; j < style_matrix_[i].size(); j++ ){
-      for( int k = 0; k < style_matrix_[i][j].size(); k++ ){
-	double dx = style_matrix_[i][j][k] - layers_[d]->style_matrix[j][k];
-	res += dx * dx / (double)style_matrix_.size();
-      }
-    }
-  }
-  res *= 1e6;
-
-  double res2 = 0;
-  vector<struct Neuron> &middle_neurons = all_neurons_[middle_layer_depth_];
-  for (int i=0; i<middle_neurons.size(); i++) {
-    double dx = middle_layer_[i] - middle_neurons[i].z;
-    res2 += dx * dx;
-  }
-
-  
-  printf( "%lf\n" , res2 );
-
-  return res + res2;
+  assert( layers_[depth]->layer_type_ == CONV_LAYER );
+  layers_[depth]->SetContent();
 }

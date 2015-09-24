@@ -35,7 +35,7 @@ void FullyConnectedLayer::ConnectNeurons(
         w.val = GenRandom(0.0, 0.1);
         w.lazy_sub = 0.0;
         w.count = 0;
-	w.gsum = 1.0;
+	w.gsum = 1000.0;
         biases_[i] = w;
     }
 
@@ -49,7 +49,7 @@ void FullyConnectedLayer::ConnectNeurons(
             w.val = GenRandom(0.0, lim);
             w.lazy_sub= 0.0;
             w.count = 0;
-	    w.gsum = 1.0;
+	    w.gsum = 1000.0;
             weights_[i][j] = w;
         }
     }

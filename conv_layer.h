@@ -33,6 +33,17 @@ public:
     virtual void Save( char *s );
     virtual void Load( char *s );
 
+    virtual void SetStyle();
+
+    void CalculateStyle(vector<struct Neuron> &units);
+
+    virtual void VisualizeStyle( int filenum ,  int depth );
+
+
+    virtual void SetContent();
+    
+    void CalculateContent( vector<struct Neuron> &units );
+    
 private:
     bool neuron_connected_;
     int breadth_neuron_;
@@ -48,6 +59,18 @@ private:
     double momentum_;
     vector<struct Weight> biases_;
     WeightVector4d weights_; // [filter_idx][channel_idx][y][x], weight-sharing
+
+    bool styleset_;
+    
+    DoubleVector2d tstyle_;
+    DoubleVector2d style_;
+
+    DoubleVector2d styleerror_;
+
+    bool contentset_;
+
+    vector<double> tcontent_;
+    vector<double> content_;
 };
 
 #endif
